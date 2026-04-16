@@ -1,0 +1,35 @@
+# general
+.DS_Store
+.expo/
+.idea
+.metro-health-check*
+*.jks
+*.key
+*.mobileprovision
+*.orig.*
+*.p12
+*.p8
+*.swp
+/android/
+credentials.json
+/dist/
+expo-env.d.ts
+/ios/
+node_modules/
+npm-debug.*
+tsconfig.tsbuildinfo
+web-build/
+
+# env files
+.env
+.env.*
+.envrc
+!.*.example
+
+# apple-targets
+generated.entitlements
+
+# ai
+.claude/settings.local.json
+.claude/worktrees/
+.agents

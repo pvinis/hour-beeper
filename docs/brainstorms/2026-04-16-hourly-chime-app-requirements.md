@@ -74,7 +74,7 @@ The main product tension is platform behavior on iOS. The app's first priority i
 - Broad-support baseline plus conditional AlarmKit: the product should work on supported iPhones through notification mode even where AlarmKit is unavailable.
 
 ## High-Level Technical Direction
-- Bootstrap from the existing LeanScaper `mobile-app` repo as inspiration, keeping only shell pieces that materially accelerate this product.
+- Bootstrap from an existing Expo app shell as inspiration, keeping only the pieces that materially accelerate this product.
 - Perform an early cleanup pass that removes unrelated product domains and support infrastructure before feature work begins.
 - Prefer jotai plus expo-sqlite for local persistence unless a delivery-mode requirement forces a narrow exception.
 

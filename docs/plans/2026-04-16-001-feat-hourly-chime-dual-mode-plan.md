@@ -10,7 +10,7 @@ origin: docs/brainstorms/2026-04-16-hourly-chime-app-requirements.md
 
 ## Overview
 
-Bootstrap a minimal iOS-first Expo app from the LeanScaper mobile shell, strip it down to a single-purpose hourly chime product, and implement two delivery engines against one shared settings model:
+Bootstrap a minimal iOS-first Expo app from a source shell, strip it down to a single-purpose hourly chime product, and implement two delivery engines against one shared settings model:
 
 - **Notification mode** for broad support and a subtler Casio-watch feel
 - **AlarmKit mode** for iOS 26+ system alarm behavior
@@ -24,7 +24,7 @@ The requirements document defines a deliberately small product: a brief recurrin
 This repository currently has no app code, so planning must account for two realities at once:
 
 1. The app needs a fast bootstrap path from an existing Expo/React Native shell.
-2. The bootstrap must not import unrelated product concerns that would turn a simple chime app into a half-deleted LeanScaper clone.
+2. The bootstrap must not import unrelated product concerns that would turn a simple chime app into a half-deleted source-app clone.
 
 The technical design therefore centers on a **shared schedule domain model** that can drive multiple OS delivery backends while keeping the UI, persistence, and dogfooding workflow stable.
 
@@ -55,16 +55,16 @@ The technical design therefore centers on a **shared schedule domain model** tha
 
 ### Bootstrap Source and Cleanup Inventory
 
-- **External inspiration repo:** LeanScaper `mobile-app` repo. The plan names the repo rather than an absolute filesystem path so the document stays portable.
-- **Copy baseline:** seed this repo from that `mobile-app` shell, but do **not** import dependency or generated native build artifacts such as `node_modules/`, `ios/`, `android/`, `.expo/`, or `dist/`.
+- **External inspiration repo:** an existing Expo app repo used as a shell reference. The plan names the repo rather than an absolute filesystem path so the document stays portable.
+- **Copy baseline:** seed this repo from that source shell, but do **not** import dependency or generated native build artifacts such as `node_modules/`, `ios/`, `android/`, `.expo/`, or `dist/`.
 - **Keep candidates from the source repo:** `package.json`, `app.config.ts`, `babel.config.js`, `index.js`, `tsconfig.json`, `src/app/_layout.tsx`, `src/utils/atomWithStorage.ts`, `src/storage/persist.ts`, and only the smallest useful provider/screen shell pieces.
 - **Immediate removal pass after import:** `api/`, `maestro/`, `modules/expo-live-activity/`, `patches/`, `targets/`, `todos/`, copied docs/history artifacts, and unrelated source domains such as chat, huddle, inventory, agents, auth, analytics, feature flags, camera, location, and media-upload flows.
-- **Inside-file cleanup focus:** strip LeanScaper-specific concerns from `package.json`, `app.config.ts`, `src/app/_layout.tsx`, `src/utils/Providers/index.tsx`, `src/storage/persist.ts`, and `README.md`.
+- **Inside-file cleanup focus:** strip source-app-specific concerns from `package.json`, `app.config.ts`, `src/app/_layout.tsx`, `src/utils/Providers/index.tsx`, `src/storage/persist.ts`, and `README.md`.
 
 ### Relevant Code and Patterns
 
 - The current repo has no local app shell yet, so the bootstrap must create the initial structure.
-- The LeanScaper mobile app provides reusable shell patterns for this repo once copied in and pruned:
+- The source app provides reusable shell patterns for this repo once copied in and pruned:
   - `package.json` — Expo SDK 55 app scaffold and script layout
   - `app.config.ts` — config-plugin driven Expo app configuration
   - `src/app/_layout.tsx` — Expo Router startup shell
@@ -208,9 +208,9 @@ flowchart TB
   U5 --> U6
 ```
 
-- [ ] **Unit 1: Bootstrap the repo and remove LeanScaper baggage**
+- [x] **Unit 1: Bootstrap the repo and remove imported app baggage**
 
-**Goal:** Seed this repository with the reusable Expo shell from the external LeanScaper `mobile-app` inspiration repo, then remove product domains, dependencies, and config that do not belong in a chime app.
+**Goal:** Seed this repository with the reusable Expo shell from an external source-app inspiration repo, then remove product domains, dependencies, and config that do not belong in a chime app.
 
 **Requirements:** R16-R24
 
@@ -225,7 +225,7 @@ flowchart TB
 - Modify and strip product concerns from: `package.json`, `app.config.ts`, `src/app/_layout.tsx`, `src/utils/Providers/index.tsx`, `src/storage/persist.ts`, `README.md`
 
 **Approach:**
-- Copy the external LeanScaper `mobile-app` repo into this repo **without** `node_modules/`, `ios/`, and `android/`, then immediately reduce it to a minimal app shell.
+- Copy the external source app repo into this repo **without** `node_modules/`, `ios/`, and `android/`, then immediately reduce it to a minimal app shell.
 - Remove old product concerns from top-level config and runtime startup code, especially:
   - Auth0/session flows
   - LaunchDarkly/feature flags
@@ -247,7 +247,7 @@ flowchart TB
 - Test expectation: none -- this unit is repository bootstrap and cleanup work; behavior is validated by later units.
 
 **Verification:**
-- The repo starts as a minimal Expo app shell with no leftover LeanScaper product screens, auth flow, backend coupling, or release-management clutter.
+- The repo starts as a minimal Expo app shell with no leftover imported product screens, auth flow, backend coupling, or release-management clutter.
 
 - [ ] **Unit 2: Define the schedule domain and persisted settings model**
 
@@ -404,7 +404,7 @@ flowchart TB
 - Integration — committed UI edits trigger one scheduler reconciliation path and do not leave stale OS artifacts behind.
 
 **Verification:**
-- One screen is sufficient to configure, understand, and compare both delivery modes without any leftover LeanScaper concepts.
+- One screen is sufficient to configure, understand, and compare both delivery modes without any leftover imported product concepts.
 
 - [ ] **Unit 6: Add dogfooding diagnostics and release-readiness docs**
 
@@ -422,6 +422,7 @@ flowchart TB
 **Approach:**
 - Persist lightweight diagnostic data such as active mode, permission state, last scheduler reconciliation time, last known scheduled artifact counts, and last user-confirmed outcome fields.
 - Keep diagnostics visible enough for dogfooding but clearly temporary so the section can be removed or hidden once the long-term default is chosen.
+- Include a small settings/diagnostics footer that shows the current app version and an expanded `moreVersion`-style build/update string so testers can tell exactly which build they are running.
 - Update `README.md` with the evaluation rubric and manual verification expectations for both modes.
 - Reconcile the requirements doc if implementation planning clarifies the eventual post-dogfood cleanup path.
 
@@ -431,12 +432,13 @@ flowchart TB
 
 **Test scenarios:**
 - Happy path — diagnostics reflect the current mode, current permissions, and the most recent successful reconciliation.
+- Happy path — the settings/diagnostics footer shows the current app version and expanded `moreVersion`-style build/update metadata.
 - Edge case — mode switches preserve historical comparison context rather than wiping all evidence.
 - Error path — failed reconciliation updates diagnostics with actionable state instead of stale “healthy” values.
 - Integration — diagnostics survive app relaunch so multi-day dogfooding remains comparable.
 
 **Verification:**
-- Testers can compare notification mode and AlarmKit mode over multiple days without needing external tooling or guesswork.
+- Testers can compare notification mode and AlarmKit mode over multiple days without needing external tooling or guesswork, and can identify the exact app/build version that produced each result.
 
 ## System-Wide Impact
 
@@ -453,7 +455,7 @@ flowchart TB
 
 - **Interaction graph:** UI writes intent into persisted state; the scheduler reconciles that state into notification or AlarmKit artifacts; diagnostics observe reconciliation results.
 - **Error propagation:** Permission denials and scheduling failures should surface as user-readable app state, not mutate or erase valid stored settings.
-- **State lifecycle risks:** duplicate OS artifacts after mode switches, stale AlarmKit id mappings, timezone drift, and lingering LeanScaper config after bootstrap are the main state hazards.
+- **State lifecycle risks:** duplicate OS artifacts after mode switches, stale AlarmKit id mappings, timezone drift, and lingering source-app config after bootstrap are the main state hazards.
 - **API surface parity:** Both delivery engines must honor the same schedule, enabled state, and sound-selection concepts even if OS presentation differs.
 - **Integration coverage:** Physical-device checks are required for notification delivery, AlarmKit authorization, OS gating, sound packaging, reboot/relaunch behavior, and Notification Center clutter.
 - **Unchanged invariants:** The app remains backend-free, auth-free, and focused on recurring chimes rather than chat, notes, media capture, or broad reminder workflows.
@@ -473,7 +475,7 @@ flowchart TB
 |------|-----------|--------|------------|
 | Notification mode still clutters Notification Center more than acceptable | High | High | Keep it as one evaluation mode, use grouping/cleanup best effort, and compare honestly against AlarmKit |
 | AlarmKit schedule shapes do not map neatly to preset/custom-hour rules | Medium | High | Spike early with a narrow local module and expect to materialize multiple alarms where needed |
-| Bootstrap copies too much LeanScaper baggage and slows the project down | High | Medium | Make pruning the first implementation unit and treat removed domains as explicit scope |
+| Bootstrap copies too much source-app baggage and slows the project down | High | Medium | Make pruning the first implementation unit and treat removed domains as explicit scope |
 | Custom sounds behave differently across dev vs release builds | Medium | Medium | Bundle short tested sound assets and verify on physical release-like builds early |
 | Dogfooding evidence is too fuzzy to choose a default mode | Medium | Medium | Add lightweight diagnostics and a written comparison rubric in the repo |
 | OS-version gating causes confusing UI states | Medium | Medium | Make availability and permission states explicit in the settings surface |
