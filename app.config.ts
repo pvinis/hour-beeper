@@ -24,6 +24,17 @@ export default (): ExpoConfig => ({
 		"./plugins/withXcodeEnv",
 		"expo-router",
 		"expo-sqlite",
+		[
+			"expo-notifications",
+			{
+				sounds: [
+					"./assets/sounds/casio-beep.wav",
+					"./assets/sounds/classic-beep.wav",
+					"./assets/sounds/soft-beep.wav",
+					"./assets/sounds/digital-beep.wav",
+				],
+			},
+		],
 		["expo-dev-client", { launchMode: "most-recent" }],
 	],
 	experiments: {
@@ -36,6 +47,8 @@ export default (): ExpoConfig => ({
 		icon: "./assets/app-icon.png",
 		infoPlist: {
 			ITSAppUsesNonExemptEncryption: false,
+			NSAlarmKitUsageDescription:
+				"Hour Beeper uses AlarmKit to schedule reliable chimes even when the app is closed.",
 		},
 	},
 	extra: {

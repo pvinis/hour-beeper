@@ -20,8 +20,11 @@ The plan is optimized for real-device dogfooding. V1 keeps the mode switch visib
 ## Execution Status
 
 - Completed: **Unit 1** — bootstrap/prune shell
-- Current implementation state: minimal Expo shell in place, Uniwind styling restored, light/dark semantic theme tokens wired, app icon added, and bundle identifier set to `com.pvinis.hourbeeper`
-- Next up: **Unit 2** — define the shared schedule domain and persisted settings model, test-first
+- Completed: **Unit 2** — shared schedule domain and persisted settings model
+- Completed: **Unit 3** — notification delivery engine with bundled sounds and reconciliation
+- Completed: **Unit 4** — AlarmKit engine behind OS gating with repo-owned native Expo module
+- Current implementation state: both delivery engines wired (notification + AlarmKit), shared scheduler reconciles both, Casio-inspired sound added as default, 19 passing tests covering schedule domain, notification reconciliation, and AlarmKit gating.
+- Next up: **Unit 5** — settings and permissions UI
 
 ## Problem Frame
 
@@ -260,7 +263,7 @@ flowchart TB
 
 - The repo starts as a minimal Expo app shell with no leftover imported product screens, auth flow, backend coupling, or release-management clutter.
 
-- [ ] **Unit 2: Define the schedule domain and persisted settings model**
+- [x] **Unit 2: Define the schedule domain and persisted settings model**
 
 **Goal:** Create one canonical settings and scheduling model that both delivery engines can consume.
 
@@ -308,7 +311,7 @@ flowchart TB
 
 - A single persisted settings model can regenerate the same user intent consistently regardless of which delivery engine is active.
 
-- [ ] **Unit 3: Add the notification delivery engine**
+- [x] **Unit 3: Add the notification delivery engine**
 
 **Goal:** Schedule local chimes with bundled custom sounds and a best-effort low-clutter notification strategy.
 
@@ -352,7 +355,7 @@ flowchart TB
 
 - On a physical device, notification mode produces the configured chime while the app is closed and keeps OS artifacts synchronized to stored settings.
 
-- [ ] **Unit 4: Add the AlarmKit delivery engine behind OS gating**
+- [x] **Unit 4: Add the AlarmKit delivery engine behind OS gating**
 
 **Goal:** Integrate AlarmKit as an iOS 26+ alternative delivery engine through a repo-owned Expo module.
 

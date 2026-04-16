@@ -1,12 +1,18 @@
 import "@@/global.css"
 
+import { configureForegroundNotifications } from "@/features/chime/notificationEngine"
 import { HighLevelProviders, Providers } from "@/utils/Providers"
 import { Stack, type ErrorBoundaryProps } from "expo-router"
+import { useEffect } from "react"
 import { Pressable, Text, View } from "react-native"
 import { useResolveClassNames } from "uniwind"
 
 export default function RootLayout() {
 	const contentStyle = useResolveClassNames("bg-surface-agent-primary")
+
+	useEffect(() => {
+		void configureForegroundNotifications()
+	}, [])
 
 	return (
 		<Providers>
