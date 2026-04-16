@@ -15,7 +15,8 @@
     "format": "prettier --write .",
     "tests": "vitest run",
     "tests:watch": "vitest",
-    "doctor": "bun x expo-doctor@latest"
+    "doctor": "bun x expo-doctor@latest",
+    "clean": "rimraf ios android"
   },
   "dependencies": {
     "clsx": "^2.1.1",
@@ -49,6 +50,7 @@
     "postcss": "^8.5.10",
     "prettier": "^3.8.1",
     "prettier-plugin-tailwindcss": "^0.7.2",
+    "rimraf": "^6.1.3",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "vitest": "^4.1.2"
