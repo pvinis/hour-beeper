@@ -23,8 +23,9 @@ The plan is optimized for real-device dogfooding. V1 keeps the mode switch visib
 - Completed: **Unit 2** — shared schedule domain and persisted settings model
 - Completed: **Unit 3** — notification delivery engine with bundled sounds and reconciliation
 - Completed: **Unit 4** — AlarmKit engine behind OS gating with repo-owned native Expo module
-- Current implementation state: both delivery engines wired (notification + AlarmKit), shared scheduler reconciles both, Casio-inspired sound added as default, 19 passing tests covering schedule domain, notification reconciliation, and AlarmKit gating.
-- Next up: **Unit 5** — settings and permissions UI
+- Completed: **Unit 5** — settings-first home screen with all sections
+- Completed: **Unit 6** — diagnostics, evaluation rubric, and docs
+- Current implementation state: all 6 units complete. Both delivery engines wired, single settings screen with master toggle, schedule/sound/mode pickers, permission banners, and diagnostics footer. 23 passing tests. Ready for physical-device dogfooding.
 
 ## Problem Frame
 
@@ -402,7 +403,7 @@ flowchart TB
 
 - On supported physical devices, AlarmKit mode chimes with the app closed and can be compared directly against notification mode using the same stored settings.
 
-- [ ] **Unit 5: Build the native-feeling settings and permissions surface**
+- [x] **Unit 5: Build the native-feeling settings and permissions surface**
 
 **Goal:** Replace the imported product UI with one focused screen for schedule setup, sound choice, mode switching, and permission state.
 
@@ -442,7 +443,7 @@ flowchart TB
 
 - One screen is sufficient to configure, understand, and compare both delivery modes without any leftover imported product concepts.
 
-- [ ] **Unit 6: Add dogfooding diagnostics and release-readiness docs**
+- [x] **Unit 6: Add dogfooding diagnostics and release-readiness docs**
 
 **Goal:** Preserve enough evidence to compare both delivery engines over several days and prepare for the eventual default-mode decision.
 

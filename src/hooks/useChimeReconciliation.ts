@@ -1,8 +1,10 @@
 import { chimeSettingsAtom } from "@/features/chime/atoms"
+import { recordReconciliation } from "@/features/chime/diagnostics"
+import { diagnosticsAtom } from "@/storage/persist"
 import { createExpoNotificationClient } from "@/features/chime/notificationEngine"
 import { reconcileChimeSchedule, type SchedulerDependencies } from "@/features/chime/scheduler"
 import type { ChimePermissionStatus, ChimeSettings } from "@/features/chime/types"
-import { useAtomValue } from "jotai"
+import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 interface ReconciliationState {
@@ -14,6 +16,7 @@ interface ReconciliationState {
 
 export function useChimeReconciliation() {
 	const settings = useAtomValue(chimeSettingsAtom)
+	const setDiagnostics = useSetAtom(diagnosticsAtom)
 	const [state, setState] = useState<ReconciliationState>({
 		notificationPermission: "unknown",
 		alarmkitPermission: "unknown",
@@ -40,15 +43,27 @@ export function useChimeReconciliation() {
 					return
 				}
 
+				const notifPerm = result?.notification?.permission.status
+				const akPerm = result?.alarmkit?.permission.status
+				const activeResult = currentSettings.deliveryMode === "alarmkit" ? result?.alarmkit : result?.notification
+
 				setState((prev) => ({
 					...prev,
 					isReconciling: false,
 					lastReconciledAt: new Date().toISOString(),
-					notificationPermission:
-						result?.notification?.permission.status ?? prev.notificationPermission,
-					alarmkitPermission:
-						result?.alarmkit?.permission.status ?? prev.alarmkitPermission,
+					notificationPermission: notifPerm ?? prev.notificationPermission,
+					alarmkitPermission: akPerm ?? prev.alarmkitPermission,
 				}))
+
+				setDiagnostics((prev) =>
+					recordReconciliation(prev, {
+						mode: currentSettings.deliveryMode,
+						status: activeResult?.status ?? "no-op",
+						artifactCount: activeResult?.requestCount ?? null,
+						notificationPermission: notifPerm,
+						alarmkitPermission: akPerm,
+					}),
+				)
 			} catch (error) {
 				console.warn("[useChimeReconciliation] Reconciliation failed:", error)
 
@@ -57,7 +72,7 @@ export function useChimeReconciliation() {
 				}
 			}
 		},
-		[],
+		[setDiagnostics],
 	)
 
 	useEffect(() => {

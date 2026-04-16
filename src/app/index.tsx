@@ -1,4 +1,5 @@
 import { DeliveryModeSection } from "@/components/settings/DeliveryModeSection"
+import { DiagnosticsSection } from "@/components/settings/DiagnosticsSection"
 import { PermissionBanner } from "@/components/settings/PermissionBanner"
 import { ScheduleSection } from "@/components/settings/ScheduleSection"
 import { SoundSection } from "@/components/settings/SoundSection"
@@ -76,6 +77,8 @@ export default function HomeScreen() {
 						</Text>
 					</View>
 				)}
+
+				<DiagnosticsSection />
 			</ScrollView>
 		</Screen>
 	)
