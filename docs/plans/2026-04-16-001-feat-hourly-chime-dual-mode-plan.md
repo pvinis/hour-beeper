@@ -1,7 +1,7 @@
 ---
 title: feat: Build dual-mode hourly chime app
 type: feat
-status: active
+status: in_progress
 date: 2026-04-16
 origin: docs/brainstorms/2026-04-16-hourly-chime-app-requirements.md
 ---
@@ -16,6 +16,12 @@ Bootstrap a minimal iOS-first Expo app from a source shell, strip it down to a s
 - **AlarmKit mode** for iOS 26+ system alarm behavior
 
 The plan is optimized for real-device dogfooding. V1 keeps the mode switch visible, persists schedule and sound settings locally, and adds lightweight diagnostics so the team can compare reliability, notification-center clutter, and overall annoyance/prominence before choosing the long-term default.
+
+## Execution Status
+
+- Completed: **Unit 1** — bootstrap/prune shell
+- Current implementation state: minimal Expo shell in place, Uniwind styling restored, light/dark semantic theme tokens wired, app icon added, and bundle identifier set to `com.pvinis.hourbeeper`
+- Next up: **Unit 2** — define the shared schedule domain and persisted settings model, test-first
 
 ## Problem Frame
 
