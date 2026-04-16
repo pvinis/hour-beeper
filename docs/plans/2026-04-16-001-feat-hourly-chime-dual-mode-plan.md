@@ -102,15 +102,15 @@ The technical design therefore centers on a **shared schedule domain model** tha
 
 ## Key Technical Decisions
 
-| Decision | Rationale |
-|---|---|
-| Use a **selective bootstrap + aggressive prune** strategy instead of building the shell from scratch or importing the full inspiration app unchanged | The repo is empty, so bootstrap accelerates delivery; selective pruning keeps scope aligned with a tiny single-purpose app |
-| Define one canonical **`ChimeSettings` / schedule domain model** and treat Notification vs AlarmKit as interchangeable delivery engines | The product explicitly needs side-by-side comparison without forcing users to rebuild schedules |
-| Use **local notifications**, not push notifications, for notification mode | The core need is closed-app on-device delivery, not remote orchestration; push adds server complexity without solving Notification Center concerns |
-| Gate AlarmKit by **OS availability** instead of raising the whole app floor to iOS 26 | Preserves broader iPhone coverage while still enabling honest comparison on newer devices |
-| Build a **local Expo module** for AlarmKit under `modules/` rather than depending on a young third-party package | The app needs a narrow, predictable bridge, and current community packages are too new to anchor product behavior |
-| Prefer **jotai + expo-sqlite** for persisted settings, with OS scheduled artifacts treated as derived state | Matches user preference and existing shell patterns while keeping the app’s source of truth internal |
-| Add **lightweight in-app diagnostics** instead of heavy analytics | Dogfooding needs durable evidence, but the product should stay simple and privacy-light |
+| Decision                                                                                                                                             | Rationale                                                                                                                                          |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Use a **selective bootstrap + aggressive prune** strategy instead of building the shell from scratch or importing the full inspiration app unchanged | The repo is empty, so bootstrap accelerates delivery; selective pruning keeps scope aligned with a tiny single-purpose app                         |
+| Define one canonical **`ChimeSettings` / schedule domain model** and treat Notification vs AlarmKit as interchangeable delivery engines              | The product explicitly needs side-by-side comparison without forcing users to rebuild schedules                                                    |
+| Use **local notifications**, not push notifications, for notification mode                                                                           | The core need is closed-app on-device delivery, not remote orchestration; push adds server complexity without solving Notification Center concerns |
+| Gate AlarmKit by **OS availability** instead of raising the whole app floor to iOS 26                                                                | Preserves broader iPhone coverage while still enabling honest comparison on newer devices                                                          |
+| Build a **local Expo module** for AlarmKit under `modules/` rather than depending on a young third-party package                                     | The app needs a narrow, predictable bridge, and current community packages are too new to anchor product behavior                                  |
+| Prefer **jotai + expo-sqlite** for persisted settings, with OS scheduled artifacts treated as derived state                                          | Matches user preference and existing shell patterns while keeping the app’s source of truth internal                                               |
+| Add **lightweight in-app diagnostics** instead of heavy analytics                                                                                    | Dogfooding needs durable evidence, but the product should stay simple and privacy-light                                                            |
 
 ## Open Questions
 
@@ -172,7 +172,7 @@ The technical design therefore centers on a **shared schedule domain model** tha
 
 ## High-Level Technical Design
 
-> *This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce.*
+> _This illustrates the intended approach and is directional guidance for review, not implementation specification. The implementing agent should treat it as context, not code to reproduce._
 
 ```mermaid
 flowchart TB
@@ -217,6 +217,7 @@ flowchart TB
 **Dependencies:** None
 
 **Files:**
+
 - Create/seed: `package.json`, `app.config.ts`, `babel.config.js`, `index.js`, `tsconfig.json`, `src/`, `assets/`, `plugins/`, `scripts/`, `README.md`
 - Preserve current repo docs: `docs/brainstorms/2026-04-16-hourly-chime-app-requirements.md`
 - Remove imported folders: `api/`, `maestro/`, `modules/expo-live-activity/`, `patches/`, `targets/`, `todos/`, `dist/`, `.eas/`, `.expo/`, `.opencode/`, `.claude/`, `.agents/`
@@ -225,6 +226,7 @@ flowchart TB
 - Modify and strip product concerns from: `package.json`, `app.config.ts`, `src/app/_layout.tsx`, `src/utils/Providers/index.tsx`, `src/storage/persist.ts`, `README.md`
 
 **Approach:**
+
 - Copy the external source app repo into this repo **without** `node_modules/`, `ios/`, and `android/`, then immediately reduce it to a minimal app shell.
 - Remove old product concerns from top-level config and runtime startup code, especially:
   - Auth0/session flows
@@ -238,15 +240,18 @@ flowchart TB
 - Collapse the route tree to a single public settings-first app flow.
 
 **Patterns to follow:**
+
 - `app.config.ts`
 - `src/app/_layout.tsx`
 - `src/utils/atomWithStorage.ts`
 - `src/storage/persist.ts`
 
 **Test scenarios:**
+
 - Test expectation: none -- this unit is repository bootstrap and cleanup work; behavior is validated by later units.
 
 **Verification:**
+
 - The repo starts as a minimal Expo app shell with no leftover imported product screens, auth flow, backend coupling, or release-management clutter.
 
 - [ ] **Unit 2: Define the schedule domain and persisted settings model**
@@ -258,11 +263,13 @@ flowchart TB
 **Dependencies:** Unit 1
 
 **Files:**
+
 - Create: `src/features/chime/types.ts`, `src/features/chime/schedule.ts`, `src/features/chime/atoms.ts`, `src/features/chime/scheduler.ts`, `src/features/chime/schedule.test.ts`
 - Modify: `src/storage/persist.ts`, `src/utils/atomWithStorage.ts`
 - Test: `src/features/chime/schedule.test.ts`
 
 **Approach:**
+
 - Define a canonical `ChimeSettings` model with enabled state, schedule kind, selected cadence/custom hours, selected sound, delivery mode, and lightweight permission/diagnostic state references.
 - Keep the user-facing schedule definition separate from engine-specific materialization so notification requests and AlarmKit alarms can both be regenerated from the same source of truth.
 - Normalize preset cadences and custom-hour schedules into deterministic “next occurrence” or “materialized firing windows” logic in one place.
@@ -270,16 +277,19 @@ flowchart TB
 
 **Execution note:** Implement the schedule model test-first because later units depend on it for both correctness and parity.
 
-**Technical design:** *(directional guidance, not implementation specification)*
+**Technical design:** _(directional guidance, not implementation specification)_
+
 - Canonical settings should describe **user intent**.
 - Materializers should convert that intent into **OS artifacts**.
 - Engine adapters should consume materialized artifacts, not re-interpret raw UI state independently.
 
 **Patterns to follow:**
+
 - `src/utils/atomWithStorage.ts`
 - `src/storage/persist.ts`
 
 **Test scenarios:**
+
 - Happy path — selecting the hourly preset materializes hourly firing windows anchored to the current local time.
 - Happy path — selecting custom hours `11` and `16` produces only `11:00` and `16:00` occurrences.
 - Edge case — duplicate selected hours are deduplicated without changing user-visible intent.
@@ -289,6 +299,7 @@ flowchart TB
 - Integration — switching delivery mode preserves the same stored schedule and sound choices.
 
 **Verification:**
+
 - A single persisted settings model can regenerate the same user intent consistently regardless of which delivery engine is active.
 
 - [ ] **Unit 3: Add the notification delivery engine**
@@ -300,11 +311,13 @@ flowchart TB
 **Dependencies:** Unit 2
 
 **Files:**
+
 - Create: `src/features/chime/notificationEngine.ts`, `src/features/chime/permissions.ts`, `src/features/chime/notificationEngine.test.ts`, `assets/sounds/classic-beep.wav`, `assets/sounds/soft-beep.wav`, `assets/sounds/digital-beep.wav`
 - Modify: `app.config.ts`, `package.json`, `src/app/_layout.tsx`, `src/features/chime/scheduler.ts`
 - Test: `src/features/chime/notificationEngine.test.ts`
 
 **Approach:**
+
 - Add `expo-notifications`-based local scheduling and bundle short custom sounds through config-plugin setup.
 - Centralize notification permission requests, denied-state mapping, and schedule reconciliation into one engine boundary.
 - Materialize notification requests from the canonical schedule model and replace pending requests on app start, settings edits, and mode changes.
@@ -314,11 +327,13 @@ flowchart TB
 **Execution note:** Start with failing contract tests for request generation and replacement behavior before wiring OS APIs.
 
 **Patterns to follow:**
+
 - `app.config.ts`
 - `src/app/_layout.tsx`
 - `src/features/chime/scheduler.ts`
 
 **Test scenarios:**
+
 - Happy path — enabling notification mode with the hourly preset schedules the expected notification artifacts using the selected sound.
 - Happy path — changing from one sound to another reschedules future artifacts with the new sound.
 - Happy path — switching from a preset cadence to custom hours removes stale requests and schedules only the new ones.
@@ -328,6 +343,7 @@ flowchart TB
 - Integration — switching away from notification mode tears down notification artifacts while preserving stored settings.
 
 **Verification:**
+
 - On a physical device, notification mode produces the configured chime while the app is closed and keeps OS artifacts synchronized to stored settings.
 
 - [ ] **Unit 4: Add the AlarmKit delivery engine behind OS gating**
@@ -339,11 +355,13 @@ flowchart TB
 **Dependencies:** Unit 2
 
 **Files:**
+
 - Create: `modules/expo-hour-chime-alarmkit/expo-module.config.json`, `modules/expo-hour-chime-alarmkit/index.ts`, `modules/expo-hour-chime-alarmkit/ios/ExpoHourChimeAlarmKitModule.swift`, `modules/expo-hour-chime-alarmkit/README.md`, `src/features/chime/alarmkitEngine.ts`, `src/features/chime/alarmkitEngine.test.ts`
 - Modify: `package.json`, `app.config.ts`, `src/app/_layout.tsx`, `src/features/chime/scheduler.ts`
 - Test: `src/features/chime/alarmkitEngine.test.ts`
 
 **Approach:**
+
 - Build a narrow local Expo module that exposes only the AlarmKit capabilities this app needs: authorization, schedule, cancel, list, and metadata needed to maintain parity with the app’s settings model.
 - Gate AlarmKit at runtime and in the UI so unsupported OS versions never surface broken controls.
 - Map canonical schedules into AlarmKit-friendly alarm artifacts. Because official docs emphasize fixed and weekly/timezone-relative scheduling, expect to materialize multiple alarms for cadences or custom-hour sets that do not map 1:1 onto a single AlarmKit recurrence.
@@ -351,16 +369,19 @@ flowchart TB
 
 **Execution note:** Start with a narrow real-device spike and characterization coverage for schedule materialization before broadening the integration.
 
-**Technical design:** *(directional guidance, not implementation specification)*
+**Technical design:** _(directional guidance, not implementation specification)_
+
 - `ChimeSettings` -> normalized firing windows -> AlarmKit artifact set + persisted id map.
 - AlarmKit should remain an adapter layer; app semantics stay defined in JS/shared domain code.
 
 **Patterns to follow:**
+
 - `modules/expo-live-activity/` as a local Expo module scaffolding reference only
 - `app.config.ts`
 - `src/features/chime/scheduler.ts`
 
 **Test scenarios:**
+
 - Happy path — supported iOS device authorizes AlarmKit and schedules artifacts for the active settings.
 - Happy path — switching from notification mode to AlarmKit removes notification artifacts and materializes AlarmKit artifacts from the same stored schedule.
 - Edge case — unsupported OS keeps notification mode functional and marks AlarmKit unavailable.
@@ -369,6 +390,7 @@ flowchart TB
 - Integration — app relaunch rehydrates stored settings and re-synchronizes AlarmKit artifact mappings without stale ids.
 
 **Verification:**
+
 - On supported physical devices, AlarmKit mode chimes with the app closed and can be compared directly against notification mode using the same stored settings.
 
 - [ ] **Unit 5: Build the native-feeling settings and permissions surface**
@@ -380,22 +402,26 @@ flowchart TB
 **Dependencies:** Unit 3, Unit 4
 
 **Files:**
+
 - Create: `src/app/index.tsx`, `src/components/settings/ScheduleSection.tsx`, `src/components/settings/SoundSection.tsx`, `src/components/settings/DeliveryModeSection.tsx`, `src/components/settings/PermissionBanner.tsx`, `src/app/index.test.tsx`
 - Modify: `src/app/_layout.tsx`, `src/components/Screen.tsx`
 - Test: `src/app/index.test.tsx`
 
 **Approach:**
+
 - Collapse the app into a settings-first home screen with native-looking rows, toggles, segmented choices, and concise explanatory copy.
 - Keep the delivery-mode switch visible in V1 and explain availability, permission status, and expected tradeoffs inline.
 - Show an always-readable summary of the active schedule, selected sound, selected mode, and whether delivery is active or blocked.
 - Prefer direct React Native/iOS-style controls or extremely light wrappers over carrying forward a large branded design system.
 
 **Patterns to follow:**
+
 - `src/app/_layout.tsx`
 - `src/components/Screen.tsx`
 - only the minimal parts of `src/components/design-system/` that still improve clarity without dragging in product baggage
 
 **Test scenarios:**
+
 - Happy path — user can enable chimes, choose a preset, select a sound, and see the active summary update immediately.
 - Happy path — user can switch delivery mode without losing schedule selections.
 - Edge case — custom-hour selection supports sparse choices like `11` and `16` only.
@@ -404,6 +430,7 @@ flowchart TB
 - Integration — committed UI edits trigger one scheduler reconciliation path and do not leave stale OS artifacts behind.
 
 **Verification:**
+
 - One screen is sufficient to configure, understand, and compare both delivery modes without any leftover imported product concepts.
 
 - [ ] **Unit 6: Add dogfooding diagnostics and release-readiness docs**
@@ -415,11 +442,13 @@ flowchart TB
 **Dependencies:** Unit 3, Unit 4, Unit 5
 
 **Files:**
+
 - Create: `src/features/chime/diagnostics.ts`, `src/components/settings/DiagnosticsSection.tsx`, `src/features/chime/diagnostics.test.ts`
 - Modify: `README.md`, `docs/brainstorms/2026-04-16-hourly-chime-app-requirements.md`
 - Test: `src/features/chime/diagnostics.test.ts`
 
 **Approach:**
+
 - Persist lightweight diagnostic data such as active mode, permission state, last scheduler reconciliation time, last known scheduled artifact counts, and last user-confirmed outcome fields.
 - Keep diagnostics visible enough for dogfooding but clearly temporary so the section can be removed or hidden once the long-term default is chosen.
 - Include a small settings/diagnostics footer that shows the current app version and an expanded `moreVersion`-style build/update string so testers can tell exactly which build they are running.
@@ -427,10 +456,12 @@ flowchart TB
 - Reconcile the requirements doc if implementation planning clarifies the eventual post-dogfood cleanup path.
 
 **Patterns to follow:**
+
 - `src/storage/persist.ts`
 - `README.md`
 
 **Test scenarios:**
+
 - Happy path — diagnostics reflect the current mode, current permissions, and the most recent successful reconciliation.
 - Happy path — the settings/diagnostics footer shows the current app version and expanded `moreVersion`-style build/update metadata.
 - Edge case — mode switches preserve historical comparison context rather than wiping all evidence.
@@ -438,6 +469,7 @@ flowchart TB
 - Integration — diagnostics survive app relaunch so multi-day dogfooding remains comparable.
 
 **Verification:**
+
 - Testers can compare notification mode and AlarmKit mode over multiple days without needing external tooling or guesswork, and can identify the exact app/build version that produced each result.
 
 ## System-Wide Impact
@@ -462,23 +494,23 @@ flowchart TB
 
 ## Alternative Approaches Considered
 
-| Approach | Why not chosen as the primary plan |
-|---|---|
-| Notification-only V1 | Simpler, but it would force the product to choose before gathering real evidence about AlarmKit reliability/prominence |
-| AlarmKit-only V1 | Stronger system behavior, but it would cut off broader iPhone support and bias the dogfooding outcome prematurely |
-| Push-notification architecture | Adds backend complexity, online dependency, and the same user-surface problem without solving the core product question |
-| Depend fully on a community AlarmKit package | Current packages are promising but too early to become a hard dependency for the app’s central differentiator |
+| Approach                                     | Why not chosen as the primary plan                                                                                      |
+| -------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| Notification-only V1                         | Simpler, but it would force the product to choose before gathering real evidence about AlarmKit reliability/prominence  |
+| AlarmKit-only V1                             | Stronger system behavior, but it would cut off broader iPhone support and bias the dogfooding outcome prematurely       |
+| Push-notification architecture               | Adds backend complexity, online dependency, and the same user-surface problem without solving the core product question |
+| Depend fully on a community AlarmKit package | Current packages are promising but too early to become a hard dependency for the app’s central differentiator           |
 
 ## Risks & Dependencies
 
-| Risk | Likelihood | Impact | Mitigation |
-|------|-----------|--------|------------|
-| Notification mode still clutters Notification Center more than acceptable | High | High | Keep it as one evaluation mode, use grouping/cleanup best effort, and compare honestly against AlarmKit |
-| AlarmKit schedule shapes do not map neatly to preset/custom-hour rules | Medium | High | Spike early with a narrow local module and expect to materialize multiple alarms where needed |
-| Bootstrap copies too much source-app baggage and slows the project down | High | Medium | Make pruning the first implementation unit and treat removed domains as explicit scope |
-| Custom sounds behave differently across dev vs release builds | Medium | Medium | Bundle short tested sound assets and verify on physical release-like builds early |
-| Dogfooding evidence is too fuzzy to choose a default mode | Medium | Medium | Add lightweight diagnostics and a written comparison rubric in the repo |
-| OS-version gating causes confusing UI states | Medium | Medium | Make availability and permission states explicit in the settings surface |
+| Risk                                                                      | Likelihood | Impact | Mitigation                                                                                              |
+| ------------------------------------------------------------------------- | ---------- | ------ | ------------------------------------------------------------------------------------------------------- |
+| Notification mode still clutters Notification Center more than acceptable | High       | High   | Keep it as one evaluation mode, use grouping/cleanup best effort, and compare honestly against AlarmKit |
+| AlarmKit schedule shapes do not map neatly to preset/custom-hour rules    | Medium     | High   | Spike early with a narrow local module and expect to materialize multiple alarms where needed           |
+| Bootstrap copies too much source-app baggage and slows the project down   | High       | Medium | Make pruning the first implementation unit and treat removed domains as explicit scope                  |
+| Custom sounds behave differently across dev vs release builds             | Medium     | Medium | Bundle short tested sound assets and verify on physical release-like builds early                       |
+| Dogfooding evidence is too fuzzy to choose a default mode                 | Medium     | Medium | Add lightweight diagnostics and a written comparison rubric in the repo                                 |
+| OS-version gating causes confusing UI states                              | Medium     | Medium | Make availability and permission states explicit in the settings surface                                |
 
 ## Documentation / Operational Notes
 

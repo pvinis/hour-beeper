@@ -2,13 +2,58 @@
 @import "uniwind";
 
 @theme {
-  --color-background: #f7f5ef;
-  --color-foreground: #161514;
-  --color-muted-foreground: #4f4a44;
-  --color-card: #ffffff;
-  --color-primary: #161514;
-  --color-primary-foreground: #ffffff;
-  --color-surface-agent-primary: #f7f5ef;
-  --color-alpha-40: #ffffff99;
-  --color-alpha-90: #ffffff1a;
+	--color-background-light: #f7f5ef;
+	--color-background-dark: #0f1115;
+
+	--color-foreground-light: #161514;
+	--color-foreground-dark: #f7f5ef;
+
+	--color-muted-light: #ece7df;
+	--color-muted-dark: #272b33;
+
+	--color-muted-foreground-light: #5c554d;
+	--color-muted-foreground-dark: #b5b0a8;
+
+	--color-card-light: #ffffff;
+	--color-card-dark: #171a20;
+
+	--color-primary-light: #161514;
+	--color-primary-dark: #f7f5ef;
+
+	--color-primary-foreground-light: #ffffff;
+	--color-primary-foreground-dark: #0f1115;
+
+	--color-border-light: #d8d1c8;
+	--color-border-dark: #2d333b;
+
+	--color-surface-agent-primary-light: #f7f5ef;
+	--color-surface-agent-primary-dark: #0f1115;
+}
+
+@layer theme {
+	:root {
+		@variant light {
+			--color-background: var(--color-background-light);
+			--color-foreground: var(--color-foreground-light);
+			--color-muted: var(--color-muted-light);
+			--color-muted-foreground: var(--color-muted-foreground-light);
+			--color-card: var(--color-card-light);
+			--color-primary: var(--color-primary-light);
+			--color-primary-foreground: var(--color-primary-foreground-light);
+			--color-border: var(--color-border-light);
+			--color-surface-agent-primary: var(--color-surface-agent-primary-light);
+		}
+
+		@variant dark {
+			--color-background: var(--color-background-dark);
+			--color-foreground: var(--color-foreground-dark);
+			--color-muted: var(--color-muted-dark);
+			--color-muted-foreground: var(--color-muted-foreground-dark);
+			--color-card: var(--color-card-dark);
+			--color-primary: var(--color-primary-dark);
+			--color-primary-foreground: var(--color-primary-foreground-dark);
+			--color-border: var(--color-border-dark);
+			--color-surface-agent-primary: var(--color-surface-agent-primary-dark);
+		}
+	}
 }

@@ -1,0 +1,12 @@
+{
+  "$schema": "./node_modules/oxlint/configuration_schema.json",
+  "plugins": ["react", "typescript", "import"],
+  "categories": {
+    "correctness": "warn",
+    "suspicious": "warn",
+  },
+  "rules": {
+    "react/react-in-jsx-scope": "off", // react 17+ with new JSX transform doesnt need `React` in scope
+    "import/no-unassigned-import": "off", // polyfill imports dont need assignment (e.g. `react-native-get-random-values`)
+  },
+}

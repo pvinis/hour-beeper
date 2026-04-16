@@ -18,10 +18,10 @@ type FilteredOutProvider = false | undefined
 
 type ProviderList = Array<AllowedProvider | FilteredOutProvider>
 
-const isProvider = (item: AllowedProvider | FilteredOutProvider): item is AllowedProvider => Boolean(item)
+const isProvider = (item: AllowedProvider | FilteredOutProvider): item is AllowedProvider =>
+	Boolean(item)
 
 export const combineProviders = (list: ProviderList, children: ReactNode) =>
-	list.filter(isProvider).reduceRight(
-		(acc, Provider) => <Provider>{acc}</Provider>,
-		<>{children}</>,
-	)
+	list
+		.filter(isProvider)
+		.reduceRight((acc, Provider) => <Provider>{acc}</Provider>, <>{children}</>)
