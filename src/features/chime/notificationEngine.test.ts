@@ -5,6 +5,7 @@ import { DEFAULT_CHIME_SETTINGS, createCustomHoursSchedule } from "./schedule"
 import {
 	buildNotificationRequests,
 	configureNotificationRuntime,
+	dismissPreviousPresentedHourBeeperNotification,
 	dismissPresentedHourBeeperNotifications,
 	dismissPresentedNotificationIfOwned,
 	reconcileNotificationSchedule,
@@ -16,7 +17,7 @@ const from = DateTime.fromISO("2026-04-16T10:15:00", { zone: "UTC" })
 const grantedPermissions = { granted: true, status: "granted" as const, canAskAgain: true }
 
 describe("buildNotificationRequests", () => {
-	it("builds notification artifacts for the active schedule and sound", () => {
+	it("builds grouped notification artifacts for the active schedule and sound", () => {
 		const settings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
@@ -31,22 +32,26 @@ describe("buildNotificationRequests", () => {
 				id: request.identifier,
 				when: request.occursAt.toISO(),
 				sound: request.content.sound,
+				thread: request.content.threadIdentifier,
 			})),
 		).toEqual([
 			{
 				id: "hour-beeper.notification.2026-04-16T11:00:00.000Z",
 				when: "2026-04-16T11:00:00.000Z",
 				sound: "soft-beep.wav",
+				thread: "hour-beeper.chimes",
 			},
 			{
 				id: "hour-beeper.notification.2026-04-16T12:00:00.000Z",
 				when: "2026-04-16T12:00:00.000Z",
 				sound: "soft-beep.wav",
+				thread: "hour-beeper.chimes",
 			},
 			{
 				id: "hour-beeper.notification.2026-04-16T13:00:00.000Z",
 				when: "2026-04-16T13:00:00.000Z",
 				sound: "soft-beep.wav",
+				thread: "hour-beeper.chimes",
 			},
 		])
 	})
@@ -91,8 +96,28 @@ describe("dismissPresentedNotificationIfOwned", () => {
 	})
 })
 
+describe("dismissPreviousPresentedHourBeeperNotification", () => {
+	it("dismisses the previous presented Hour Beeper notification while keeping the current one", async () => {
+		const settings = {
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+			deliveryMode: "notification" as const,
+		}
+		const presented = toScheduledRecords(buildNotificationRequests(settings, { from, count: 3 }))
+		const fakeClient = createFakeClient({
+			permissions: grantedPermissions,
+			presented: [presented[0]!, presented[1]!],
+		})
+
+		const dismissedId = await dismissPreviousPresentedHourBeeperNotification(fakeClient, presented[2]!)
+
+		expect(dismissedId).toBe(presented[1]!.identifier)
+		expect(fakeClient.dismissedIds).toEqual([presented[1]!.identifier])
+	})
+})
+
 describe("dismissPresentedHourBeeperNotifications", () => {
-	it("dismisses all presented Hour Beeper notifications and leaves unrelated ones untouched", async () => {
+	it("keeps only the newest presented Hour Beeper notification and leaves unrelated ones untouched", async () => {
 		const settings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
@@ -113,27 +138,27 @@ describe("dismissPresentedHourBeeperNotifications", () => {
 
 		const dismissedIds = await dismissPresentedHourBeeperNotifications(fakeClient)
 
-		expect(dismissedIds).toEqual(presented.map((record) => record.identifier))
-		expect(fakeClient.dismissedIds).toEqual(presented.map((record) => record.identifier))
+		expect(dismissedIds).toEqual([presented[0]!.identifier])
+		expect(fakeClient.dismissedIds).toEqual([presented[0]!.identifier])
 	})
 })
 
 describe("configureNotificationRuntime", () => {
-	it("registers one receive listener and performs immediate and catch-up cleanup", async () => {
+	it("registers one receive listener, keeps the current notification, and collapses older ones", async () => {
 		const settings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
 			deliveryMode: "notification" as const,
 		}
-		const presented = toScheduledRecords(buildNotificationRequests(settings, { from, count: 2 }))
+		const presented = toScheduledRecords(buildNotificationRequests(settings, { from, count: 3 }))
 		const fakeClient = createFakeClient({
 			permissions: grantedPermissions,
-			presented: [presented[1]!],
+			presented: [presented[0]!, presented[1]!],
 		})
 
 		const receiveListeners: Array<
 			(notification: {
-				request: { identifier: string; content: { sound?: string | boolean | null; data?: Record<string, unknown> } }
+				request: { identifier: string; content: { sound?: string | boolean | null; data?: Record<string, unknown>; threadIdentifier?: string | null } }
 			}) => void
 		> = []
 		const activeListeners: Array<(state: string) => void> = []
@@ -162,23 +187,28 @@ describe("configureNotificationRuntime", () => {
 		expect(notifications.setNotificationHandler).toHaveBeenCalledTimes(1)
 		expect(notifications.addNotificationReceivedListener).toHaveBeenCalledTimes(1)
 		expect(appState.addEventListener).toHaveBeenCalledTimes(1)
-		expect(fakeClient.dismissedIds).toEqual([presented[1]!.identifier])
+		expect(fakeClient.dismissedIds).toEqual([presented[0]!.identifier])
 
 		receiveListeners[0]!({
 			request: {
-				identifier: presented[0]!.identifier,
-				content: presented[0]!.content,
+				identifier: presented[2]!.identifier,
+				content: presented[2]!.content,
 			},
 		})
 		await Promise.resolve()
 
 		expect(fakeClient.dismissedIds).toEqual([
-			presented[1]!.identifier,
 			presented[0]!.identifier,
+			presented[1]!.identifier,
 		])
 
 		activeListeners[0]!("active")
 		await Promise.resolve()
+
+		expect(fakeClient.dismissedIds).toEqual([
+			presented[0]!.identifier,
+			presented[1]!.identifier,
+		])
 
 		await configureNotificationRuntime(fakeClient, {
 			notifications,
@@ -330,6 +360,7 @@ function createFakeClient({
 	const scheduled: ReturnType<typeof buildNotificationRequests> = []
 	const canceledIds: string[] = []
 	const dismissedIds: string[] = []
+	const presentedState = [...presented]
 
 	const client: NotificationClient & {
 		scheduled: ReturnType<typeof buildNotificationRequests>
@@ -349,7 +380,7 @@ function createFakeClient({
 			return existing
 		},
 		async getPresentedNotificationsAsync() {
-			return presented
+			return [...presentedState]
 		},
 		async scheduleNotificationAsync(request) {
 			scheduled.push(request)
@@ -360,6 +391,10 @@ function createFakeClient({
 		},
 		async dismissNotificationAsync(identifier) {
 			dismissedIds.push(identifier)
+			const index = presentedState.findIndex((record) => record.identifier === identifier)
+			if (index >= 0) {
+				presentedState.splice(index, 1)
+			}
 		},
 	}
 

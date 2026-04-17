@@ -10,7 +10,7 @@ const MODE_CONFIG: Record<
 > = {
 	notification: {
 		label: "Notifications",
-		description: "Uses local notifications. Subtler — works on all supported iOS versions. Attempts best-effort cleanup, but may still leave visible artifacts.",
+		description: "Uses local notifications. Subtler — works on all supported iOS versions. Uses grouping and best-effort cleanup to keep the stack small, but may still leave visible artifacts.",
 	},
 	alarmkit: {
 		label: "AlarmKit",

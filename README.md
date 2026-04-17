@@ -8,7 +8,7 @@ V1 ships with **two delivery engines** so the team can compare them on real devi
 
 | Mode             | How it works                                                                                    | Tradeoff                                                         |
 | ---------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| **Notification** | Schedules local notifications with a custom bundled sound. Works on all supported iOS versions. | Attempts best-effort cleanup while the app is running or resumed, but may still leave visible artifacts after terminated delivery. |
+| **Notification** | Schedules local notifications with a custom bundled sound. Works on all supported iOS versions. | Uses grouping and best-effort cleanup to keep only the latest visible chime when the app can act, but may still leave visible artifacts after terminated delivery. |
 | **AlarmKit**     | Uses iOS 26+ system alarms that override Focus and Silent mode.                                 | More prominent system UI; requires newer iOS.                    |
 
 A **temporary delivery-mode switch** is visible in the settings screen during V1 evaluation. It will be removed once the team chooses a default.

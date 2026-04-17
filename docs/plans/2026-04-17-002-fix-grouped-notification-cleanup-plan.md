@@ -114,7 +114,7 @@ This follow-up should shift notification mode from “delete aggressively” to 
 
 ## Implementation Units
 
-- [ ] **Unit 1: Add grouping/threading metadata to Hour Beeper notification content**
+- [x] **Unit 1: Add grouping/threading metadata to Hour Beeper notification content**
 
 **Goal:** Make all Hour Beeper notifications participate in the same visible iOS notification group/thread while preserving per-occurrence ownership metadata.
 
@@ -150,7 +150,7 @@ This follow-up should shift notification mode from “delete aggressively” to 
 - Scheduled Hour Beeper notifications share explicit grouping metadata.
 - Existing per-occurrence ownership and sequencing data remains intact.
 
-- [ ] **Unit 2: Replace current-delivery cleanup with previous-on-next and keep-latest-on-active behavior**
+- [x] **Unit 2: Replace current-delivery cleanup with previous-on-next and keep-latest-on-active behavior**
 
 **Goal:** Change runtime cleanup so the current notification survives as the newest visible representative while older Hour Beeper notifications are removed when possible.
 
@@ -195,7 +195,7 @@ This follow-up should shift notification mode from “delete aggressively” to 
 - App-active cleanup leaves one newest Hour Beeper notification visible instead of clearing the entire stack.
 - Root layout still initializes notification runtime exactly once.
 
-- [ ] **Unit 3: Update product copy and dogfooding guidance for grouped-latest behavior**
+- [x] **Unit 3: Update product copy and dogfooding guidance for grouped-latest behavior**
 
 **Goal:** Align docs and in-product mode descriptions with the new “group and keep latest” cleanup posture.
 

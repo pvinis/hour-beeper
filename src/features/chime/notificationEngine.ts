@@ -12,6 +12,7 @@ import type { ChimeSettings, ChimeSound } from "./types"
 
 const NOTIFICATION_ID_PREFIX = "hour-beeper.notification"
 const NOTIFICATION_SOURCE = "hour-beeper"
+const NOTIFICATION_THREAD_IDENTIFIER = "hour-beeper.chimes"
 const DEFAULT_NOTIFICATION_COUNT = 24
 
 const SOUND_FILES: Record<ChimeSound, string> = {
@@ -33,6 +34,7 @@ export interface HourBeeperNotificationContent {
 	body: string
 	sound: string
 	data: HourBeeperNotificationData
+	threadIdentifier: string
 	interruptionLevel: "active"
 }
 
@@ -45,6 +47,7 @@ export interface HourBeeperNotificationRequest {
 interface NotificationRecordContent {
 	sound?: string | boolean | null
 	data?: Record<string, unknown>
+	threadIdentifier?: string | null
 }
 
 export interface NotificationRecord {
@@ -142,6 +145,7 @@ export function buildNotificationRequests(
 					scheduledFor: occurrence.occursAt.toISO() ?? identifier,
 					sound: settings.sound,
 				},
+				threadIdentifier: NOTIFICATION_THREAD_IDENTIFIER,
 				interruptionLevel: "active",
 			},
 		}
@@ -231,12 +235,45 @@ export async function dismissPresentedNotificationIfOwned(
 	}
 }
 
+export async function dismissPreviousPresentedHourBeeperNotification(
+	client: NotificationClient,
+	currentRecord: PresentedNotificationRecord,
+) {
+	const currentScheduledAt = getScheduledForMillis(currentRecord)
+	if (currentScheduledAt === null) {
+		return null
+	}
+
+	try {
+		const previousRecord = getOrderedPresentedHourBeeperNotifications(
+			await client.getPresentedNotificationsAsync(),
+		)
+			.filter(({ scheduledAt }) => scheduledAt < currentScheduledAt)
+			.at(-1)?.record
+
+		if (!previousRecord) {
+			return null
+		}
+
+		const didDismiss = await dismissPresentedNotificationIfOwned(client, previousRecord)
+		return didDismiss ? previousRecord.identifier : null
+	} catch (error) {
+		console.warn("[notificationEngine] Failed to dismiss previous presented notification:", error)
+		return null
+	}
+}
+
 export async function dismissPresentedHourBeeperNotifications(client: NotificationClient) {
 	try {
-		const presented = await client.getPresentedNotificationsAsync()
-		const dismissedIds: string[] = []
+		const orderedPresented = getOrderedPresentedHourBeeperNotifications(
+			await client.getPresentedNotificationsAsync(),
+		)
+		if (orderedPresented.length <= 1) {
+			return []
+		}
 
-		for (const record of presented) {
+		const dismissedIds: string[] = []
+		for (const { record } of orderedPresented.slice(0, -1)) {
 			if (await dismissPresentedNotificationIfOwned(client, record)) {
 				dismissedIds.push(record.identifier)
 			}
@@ -286,7 +323,7 @@ export async function configureNotificationRuntime(
 	void dismissPresentedHourBeeperNotifications(client)
 
 	const notificationSubscription = notifications.addNotificationReceivedListener((notification) => {
-		void dismissPresentedNotificationIfOwned(client, {
+		void dismissPreviousPresentedHourBeeperNotification(client, {
 			identifier: notification.request.identifier,
 			content: notification.request.content,
 		})
@@ -388,15 +425,55 @@ async function cancelNotifications(
 }
 
 function getRequestFingerprint(request: HourBeeperNotificationRequest) {
-	return [request.identifier, request.content.sound, request.content.data.sound].join("|")
+	return [
+		request.identifier,
+		request.content.sound,
+		request.content.data.sound,
+		request.content.threadIdentifier,
+	].join("|")
 }
 
 function getRecordFingerprint(record: NotificationRecord) {
 	const sound = typeof record.content.sound === "string" ? record.content.sound : ""
 	const data = record.content.data
 	const soundId = isRecord(data) && typeof data.sound === "string" ? data.sound : ""
+	const threadIdentifier = typeof record.content.threadIdentifier === "string"
+		? record.content.threadIdentifier
+		: ""
 
-	return [record.identifier, sound, soundId].join("|")
+	return [record.identifier, sound, soundId, threadIdentifier].join("|")
+}
+
+function getOrderedPresentedHourBeeperNotifications(records: PresentedNotificationRecord[]) {
+	return records
+		.filter(isHourBeeperNotification)
+		.map((record) => ({
+			record,
+			scheduledAt: getScheduledForMillis(record),
+		}))
+		.filter((entry): entry is { record: PresentedNotificationRecord; scheduledAt: number } =>
+			typeof entry.scheduledAt === "number",
+		)
+		.sort((left, right) => {
+			if (left.scheduledAt !== right.scheduledAt) {
+				return left.scheduledAt - right.scheduledAt
+			}
+
+			return left.record.identifier.localeCompare(right.record.identifier)
+		})
+}
+
+function getScheduledForMillis(record: NotificationRecord) {
+	const data = record.content.data
+	const scheduledFor = isRecord(data) && typeof data.scheduledFor === "string"
+		? data.scheduledFor
+		: null
+	if (!scheduledFor) {
+		return null
+	}
+
+	const scheduledAt = DateTime.fromISO(scheduledFor)
+	return scheduledAt.isValid ? scheduledAt.toMillis() : null
 }
 
 function isHourBeeperNotification(record: NotificationRecord) {
@@ -411,13 +488,18 @@ function isHourBeeperNotification(record: NotificationRecord) {
 
 function toNotificationRecord(
 	identifier: string,
-	content: { sound?: string | boolean | null; data?: Record<string, unknown> },
+	content: {
+		sound?: string | boolean | null
+		data?: Record<string, unknown>
+		threadIdentifier?: string | null
+	},
 ): NotificationRecord {
 	return {
 		identifier,
 		content: {
 			sound: content.sound,
 			data: content.data,
+			threadIdentifier: content.threadIdentifier,
 		},
 	}
 }
