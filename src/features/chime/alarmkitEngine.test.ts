@@ -219,9 +219,11 @@ function createFakeAlarmKitClient({
 
 function createFakeNotificationClient(existing: { identifier: string; content: { sound?: string | boolean | null; data?: Record<string, unknown> } }[]) {
 	const canceledIds: string[] = []
+	const dismissedIds: string[] = []
 
 	return {
 		canceledIds,
+		dismissedIds,
 		async getPermissionsAsync() {
 			return { granted: true, status: "granted", canAskAgain: true }
 		},
@@ -231,11 +233,17 @@ function createFakeNotificationClient(existing: { identifier: string; content: {
 		async getAllScheduledNotificationsAsync() {
 			return existing
 		},
+		async getPresentedNotificationsAsync() {
+			return []
+		},
 		async scheduleNotificationAsync() {
 			throw new Error("notification scheduling should not occur in this scenario")
 		},
 		async cancelScheduledNotificationAsync(identifier: string) {
 			canceledIds.push(identifier)
+		},
+		async dismissNotificationAsync(identifier: string) {
+			dismissedIds.push(identifier)
 		},
 	}
 }

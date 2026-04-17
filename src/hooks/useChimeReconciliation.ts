@@ -100,9 +100,13 @@ export function useChimeReconciliation() {
 				const alarmkitClient = await createExpoAlarmKitClient()
 				if (alarmkitClient) {
 					depsRef.current.alarmkitClient = alarmkitClient
+				} else if (mountedRef.current) {
+					setState((prev) => ({ ...prev, alarmkitPermission: "unavailable" }))
 				}
 			} catch {
-				// AlarmKit unavailable — keep notification-only deps
+				if (mountedRef.current) {
+					setState((prev) => ({ ...prev, alarmkitPermission: "unavailable" }))
+				}
 			}
 
 			await reconcile(settings, false)

@@ -1,6 +1,9 @@
 import "@@/global.css"
 
-import { configureForegroundNotifications } from "@/features/chime/notificationEngine"
+import {
+	configureNotificationRuntime,
+	createExpoNotificationClient,
+} from "@/features/chime/notificationEngine"
 import { HighLevelProviders, Providers } from "@/utils/Providers"
 import { Stack, type ErrorBoundaryProps } from "expo-router"
 import { useEffect } from "react"
@@ -11,7 +14,29 @@ export default function RootLayout() {
 	const contentStyle = useResolveClassNames("bg-surface-agent-primary")
 
 	useEffect(() => {
-		void configureForegroundNotifications()
+		let cleanup: (() => void) | null = null
+		let cancelled = false
+
+		void (async () => {
+			try {
+				const notificationClient = await createExpoNotificationClient()
+				const runtimeCleanup = await configureNotificationRuntime(notificationClient)
+
+				if (cancelled) {
+					runtimeCleanup()
+					return
+				}
+
+				cleanup = runtimeCleanup
+			} catch (error) {
+				console.warn("[RootLayout] Failed to configure notification runtime:", error)
+			}
+		})()
+
+		return () => {
+			cancelled = true
+			cleanup?.()
+		}
 	}, [])
 
 	return (

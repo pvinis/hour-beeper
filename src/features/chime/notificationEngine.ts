@@ -42,18 +42,25 @@ export interface HourBeeperNotificationRequest {
 	content: HourBeeperNotificationContent
 }
 
-export interface ScheduledNotificationRecord {
-	identifier: string
-	content: {
-		sound?: string | boolean | null
-		data?: Record<string, unknown>
-	}
+interface NotificationRecordContent {
+	sound?: string | boolean | null
+	data?: Record<string, unknown>
 }
+
+export interface NotificationRecord {
+	identifier: string
+	content: NotificationRecordContent
+}
+
+export type ScheduledNotificationRecord = NotificationRecord
+export type PresentedNotificationRecord = NotificationRecord
 
 export interface NotificationClient extends NotificationPermissionClient {
 	getAllScheduledNotificationsAsync(): Promise<ScheduledNotificationRecord[]>
+	getPresentedNotificationsAsync(): Promise<PresentedNotificationRecord[]>
 	scheduleNotificationAsync(request: HourBeeperNotificationRequest): Promise<string>
 	cancelScheduledNotificationAsync(identifier: string): Promise<void>
+	dismissNotificationAsync(identifier: string): Promise<void>
 }
 
 export interface NotificationReconciliationResult {
@@ -64,7 +71,46 @@ export interface NotificationReconciliationResult {
 	requestCount: number
 }
 
+interface NotificationBehavior {
+	shouldShowBanner: boolean
+	shouldShowList: boolean
+	shouldPlaySound: boolean
+	shouldSetBadge: boolean
+}
+
+interface NotificationHandlerModule {
+	setNotificationHandler(handler: {
+		handleNotification: () => Promise<NotificationBehavior>
+	}): void
+}
+
+interface NotificationRuntimeEvent {
+	request: {
+		identifier: string
+		content: NotificationRecordContent
+	}
+}
+
+interface SubscriptionLike {
+	remove(): void
+}
+
+interface NotificationRuntimeModule extends NotificationHandlerModule {
+	addNotificationReceivedListener(listener: (notification: NotificationRuntimeEvent) => void): SubscriptionLike
+}
+
+interface AppStateAdapter {
+	addEventListener(type: "change", listener: (state: string) => void): SubscriptionLike
+}
+
+export interface NotificationRuntimeDependencies {
+	notifications?: NotificationRuntimeModule
+	appState?: AppStateAdapter
+}
+
 let didConfigureForegroundNotifications = false
+let didConfigureNotificationRuntime = false
+let notificationRuntimeCleanup: (() => void) | null = null
 
 export function buildNotificationRequests(
 	settings: ChimeSettings,
@@ -168,14 +214,51 @@ export async function reconcileNotificationSchedule(
 	}
 }
 
-export async function configureForegroundNotifications() {
+export async function dismissPresentedNotificationIfOwned(
+	client: NotificationClient,
+	record: PresentedNotificationRecord,
+) {
+	if (!isHourBeeperNotification(record)) {
+		return false
+	}
+
+	try {
+		await client.dismissNotificationAsync(record.identifier)
+		return true
+	} catch (error) {
+		console.warn("[notificationEngine] Failed to dismiss presented notification:", error)
+		return false
+	}
+}
+
+export async function dismissPresentedHourBeeperNotifications(client: NotificationClient) {
+	try {
+		const presented = await client.getPresentedNotificationsAsync()
+		const dismissedIds: string[] = []
+
+		for (const record of presented) {
+			if (await dismissPresentedNotificationIfOwned(client, record)) {
+				dismissedIds.push(record.identifier)
+			}
+		}
+
+		return dismissedIds
+	} catch (error) {
+		console.warn("[notificationEngine] Failed to inspect presented notifications:", error)
+		return []
+	}
+}
+
+export async function configureForegroundNotifications(
+	module?: NotificationHandlerModule,
+) {
 	if (didConfigureForegroundNotifications) {
 		return
 	}
 
-	const Notifications = await import("expo-notifications")
+	const notifications = module ?? (await loadNotificationRuntimeModule())
 
-	Notifications.setNotificationHandler({
+	notifications.setNotificationHandler({
 		handleNotification: async () => ({
 			shouldShowBanner: false,
 			shouldShowList: false,
@@ -185,6 +268,47 @@ export async function configureForegroundNotifications() {
 	})
 
 	didConfigureForegroundNotifications = true
+}
+
+export async function configureNotificationRuntime(
+	client: NotificationClient,
+	dependencies: NotificationRuntimeDependencies = {},
+) {
+	if (didConfigureNotificationRuntime && notificationRuntimeCleanup) {
+		return notificationRuntimeCleanup
+	}
+
+	const notifications = dependencies.notifications ?? (await loadNotificationRuntimeModule())
+	const appState = dependencies.appState ?? (await loadAppStateAdapter())
+
+	await configureForegroundNotifications(notifications)
+
+	void dismissPresentedHourBeeperNotifications(client)
+
+	const notificationSubscription = notifications.addNotificationReceivedListener((notification) => {
+		void dismissPresentedNotificationIfOwned(client, {
+			identifier: notification.request.identifier,
+			content: notification.request.content,
+		})
+	})
+
+	const appStateSubscription = appState.addEventListener("change", (state) => {
+		if (state !== "active") {
+			return
+		}
+
+		void dismissPresentedHourBeeperNotifications(client)
+	})
+
+	notificationRuntimeCleanup = () => {
+		notificationSubscription.remove()
+		appStateSubscription.remove()
+		notificationRuntimeCleanup = null
+		didConfigureNotificationRuntime = false
+	}
+	didConfigureNotificationRuntime = true
+
+	return notificationRuntimeCleanup
 }
 
 export async function createExpoNotificationClient(): Promise<NotificationClient> {
@@ -204,13 +328,14 @@ export async function createExpoNotificationClient(): Promise<NotificationClient
 		getAllScheduledNotificationsAsync: async () => {
 			const requests = await Notifications.getAllScheduledNotificationsAsync()
 
-			return requests.map((request) => ({
-				identifier: request.identifier,
-				content: {
-					sound: request.content.sound,
-					data: request.content.data,
-				},
-			}))
+			return requests.map((request) => toNotificationRecord(request.identifier, request.content))
+		},
+		getPresentedNotificationsAsync: async () => {
+			const notifications = await Notifications.getPresentedNotificationsAsync()
+
+			return notifications.map((notification) =>
+				toNotificationRecord(notification.request.identifier, notification.request.content),
+			)
 		},
 		scheduleNotificationAsync: (request) =>
 			Notifications.scheduleNotificationAsync({
@@ -223,6 +348,7 @@ export async function createExpoNotificationClient(): Promise<NotificationClient
 			}),
 		cancelScheduledNotificationAsync: (identifier) =>
 			Notifications.cancelScheduledNotificationAsync(identifier),
+		dismissNotificationAsync: (identifier) => Notifications.dismissNotificationAsync(identifier),
 	}
 }
 
@@ -265,7 +391,7 @@ function getRequestFingerprint(request: HourBeeperNotificationRequest) {
 	return [request.identifier, request.content.sound, request.content.data.sound].join("|")
 }
 
-function getRecordFingerprint(record: ScheduledNotificationRecord) {
+function getRecordFingerprint(record: NotificationRecord) {
 	const sound = typeof record.content.sound === "string" ? record.content.sound : ""
 	const data = record.content.data
 	const soundId = isRecord(data) && typeof data.sound === "string" ? data.sound : ""
@@ -273,7 +399,7 @@ function getRecordFingerprint(record: ScheduledNotificationRecord) {
 	return [record.identifier, sound, soundId].join("|")
 }
 
-function isHourBeeperNotification(record: ScheduledNotificationRecord) {
+function isHourBeeperNotification(record: NotificationRecord) {
 	if (record.identifier.startsWith(NOTIFICATION_ID_PREFIX)) {
 		return true
 	}
@@ -281,6 +407,33 @@ function isHourBeeperNotification(record: ScheduledNotificationRecord) {
 	const data = record.content.data
 
 	return isRecord(data) && data.source === NOTIFICATION_SOURCE
+}
+
+function toNotificationRecord(
+	identifier: string,
+	content: { sound?: string | boolean | null; data?: Record<string, unknown> },
+): NotificationRecord {
+	return {
+		identifier,
+		content: {
+			sound: content.sound,
+			data: content.data,
+		},
+	}
+}
+
+async function loadNotificationRuntimeModule(): Promise<NotificationRuntimeModule> {
+	const Notifications = await import("expo-notifications")
+
+	return {
+		setNotificationHandler: Notifications.setNotificationHandler,
+		addNotificationReceivedListener: Notifications.addNotificationReceivedListener,
+	}
+}
+
+async function loadAppStateAdapter(): Promise<AppStateAdapter> {
+	const { AppState } = await import("react-native")
+	return AppState
 }
 
 function isRecord(value: unknown): value is Record<string, unknown> {

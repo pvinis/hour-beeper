@@ -88,7 +88,7 @@ That gap matters because notification mode is being dogfooded specifically to co
 
 ## Implementation Units
 
-- [ ] **Unit 1: Extend the notification engine with delivered-artifact cleanup primitives**
+- [x] **Unit 1: Extend the notification engine with delivered-artifact cleanup primitives**
 
 **Goal:** Add notification-engine capabilities to inspect and selectively dismiss delivered Hour Beeper notifications without changing the existing schedule reconciliation contract.
 
@@ -128,7 +128,7 @@ That gap matters because notification mode is being dogfooded specifically to co
 - The notification engine exposes explicit delivered-notification cleanup helpers.
 - Tests prove that cleanup is selective, app-owned-only, and failure-tolerant.
 
-- [ ] **Unit 2: Register immediate and catch-up cleanup at app runtime bootstrap**
+- [x] **Unit 2: Register immediate and catch-up cleanup at app runtime bootstrap**
 
 **Goal:** Invoke the cleanup primitives at the app lifecycle points where delivered notifications can realistically be removed.
 
@@ -169,7 +169,7 @@ That gap matters because notification mode is being dogfooded specifically to co
 - Cleanup attempts happen via shared engine helpers rather than ad hoc UI code.
 - Foreground notification sound behavior remains unchanged.
 
-- [ ] **Unit 3: Update docs and evaluation copy to match the new cleanup posture**
+- [x] **Unit 3: Update docs and evaluation copy to match the new cleanup posture**
 
 **Goal:** Make the app's written promise reflect the new best-effort cleanup behavior without overstating platform guarantees.
 

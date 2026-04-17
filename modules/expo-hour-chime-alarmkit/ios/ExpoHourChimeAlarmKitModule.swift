@@ -1,6 +1,7 @@
 import ExpoModulesCore
 
 #if canImport(AlarmKit)
+import ActivityKit
 import AlarmKit
 import AppIntents
 import SwiftUI
@@ -8,7 +9,7 @@ import SwiftUI
 
 private let storedAlarmArtifactsKey = "HourBeeper.AlarmKit.StoredArtifacts"
 
-struct AlarmKitArtifactRecord: Record, Codable {
+struct AlarmKitArtifactRecord: Record {
   @Field var id: String = ""
   @Field var slotKey: String = ""
   @Field var hour: Int = 0
@@ -16,6 +17,50 @@ struct AlarmKitArtifactRecord: Record, Codable {
   @Field var weekdays: [Int] = []
   @Field var title: String = ""
   @Field var soundName: String = ""
+
+  init() {}
+
+  init(id: String, slotKey: String, hour: Int, minute: Int, weekdays: [Int], title: String, soundName: String) {
+    self.id = id
+    self.slotKey = slotKey
+    self.hour = hour
+    self.minute = minute
+    self.weekdays = weekdays
+    self.title = title
+    self.soundName = soundName
+  }
+}
+
+private struct PersistedAlarmKitArtifact: Codable {
+  let id: String
+  let slotKey: String
+  let hour: Int
+  let minute: Int
+  let weekdays: [Int]
+  let title: String
+  let soundName: String
+
+  init(record: AlarmKitArtifactRecord) {
+    id = record.id
+    slotKey = record.slotKey
+    hour = record.hour
+    minute = record.minute
+    weekdays = record.weekdays
+    title = record.title
+    soundName = record.soundName
+  }
+
+  var record: AlarmKitArtifactRecord {
+    AlarmKitArtifactRecord(
+      id: id,
+      slotKey: slotKey,
+      hour: hour,
+      minute: minute,
+      weekdays: weekdays,
+      title: title,
+      soundName: soundName
+    )
+  }
 }
 
 public final class ExpoHourChimeAlarmKitModule: Module {
@@ -65,7 +110,7 @@ public final class ExpoHourChimeAlarmKitModule: Module {
           }
 
           let configuration = try buildConfiguration(for: artifact)
-          try await AlarmManager.shared.schedule(id: uuid, configuration: configuration)
+          _ = try await AlarmManager.shared.schedule(id: uuid, configuration: configuration)
           scheduledIds.append(artifact.id)
         }
 
@@ -101,7 +146,8 @@ public final class ExpoHourChimeAlarmKitModule: Module {
 }
 
 private func persistArtifacts(_ artifacts: [AlarmKitArtifactRecord]) throws {
-  let data = try JSONEncoder().encode(artifacts)
+  let persistedArtifacts = artifacts.map(PersistedAlarmKitArtifact.init(record:))
+  let data = try JSONEncoder().encode(persistedArtifacts)
   UserDefaults.standard.set(data, forKey: storedAlarmArtifactsKey)
 }
 
@@ -110,7 +156,7 @@ private func loadArtifacts() -> [AlarmKitArtifactRecord] {
     return []
   }
 
-  return (try? JSONDecoder().decode([AlarmKitArtifactRecord].self, from: data)) ?? []
+  return (try? JSONDecoder().decode([PersistedAlarmKitArtifact].self, from: data).map(\.record)) ?? []
 }
 
 private func clearArtifacts() {
