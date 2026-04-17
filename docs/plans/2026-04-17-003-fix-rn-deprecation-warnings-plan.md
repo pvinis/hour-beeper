@@ -110,7 +110,7 @@ That means the real problem is not “migrate five app imports.” It is “stop
 
 ## Implementation Units
 
-- [ ] **Unit 1: Replace the narrow Uniwind patch with a full deprecation-compatibility transform**
+- [x] **Unit 1: Replace the narrow Uniwind patch with a full deprecation-compatibility transform**
 
 **Goal:** Stop the installed Uniwind package from touching the deprecated React Native exports that currently trigger startup warnings.
 
@@ -146,7 +146,7 @@ That means the real problem is not “migrate five app imports.” It is “stop
 - A fresh install followed by postinstall produces patched Uniwind artifacts with no direct startup path to the five deprecated React Native getters.
 - Patch output makes success vs drift obvious.
 
-- [ ] **Unit 2: Pin and document the patched dependency contract**
+- [x] **Unit 2: Pin and document the patched dependency contract**
 
 **Goal:** Prevent silent regressions caused by minor-version drift while the repo carries a local compatibility patch.
 
@@ -175,7 +175,7 @@ That means the real problem is not “migrate five app imports.” It is “stop
 - Dependency installation resolves the intended Uniwind version consistently.
 - The repo clearly communicates why the version is pinned and when it is safe to unpin.
 
-- [ ] **Unit 3: Add a regression harness for future warning reintroduction**
+- [x] **Unit 3: Add a regression harness for future warning reintroduction**
 
 **Goal:** Catch future dependency or patch drift before it returns the warnings to app startup.
 

@@ -39,6 +39,8 @@ bun install
 bun dev
 ```
 
+> **Note:** The repo currently pins and patches `uniwind@1.6.2` during `postinstall` to avoid React Native 0.83 startup warnings from deprecated core exports. If you upgrade Uniwind, rerun `bun run verify:uniwind` and validate that the compatibility patch is still correct.
+
 To run directly on a physical iOS device:
 
 ```sh

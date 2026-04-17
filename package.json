@@ -13,7 +13,9 @@
     "build:prod:ios": "bun scripts/build.ts production ios --auto-submit",
     "run:ios": "bun x eas-cli@latest build:run -e development-sim -p ios --latest",
     "prebuild": "APP_VARIANT=development expo prebuild",
+    "postinstall": "node scripts/patch-uniwind.mjs && node scripts/verify-uniwind-compat.mjs",
     "typecheck": "tsc --noEmit",
+    "verify:uniwind": "node scripts/verify-uniwind-compat.mjs",
     "lint": "oxlint --type-aware",
     "lint:fast": "oxlint",
     "format": "prettier --write .",
@@ -46,7 +48,7 @@
     "react-native-safe-area-context": "~5.6.2",
     "react-native-screens": "~4.23.0",
     "tailwind-merge": "^3.5.0",
-    "uniwind": "^1.6.2"
+    "uniwind": "1.6.2"
   },
   "devDependencies": {
     "@expo/config-types": "^55.0.5",
