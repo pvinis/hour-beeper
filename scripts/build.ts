@@ -18,11 +18,7 @@ function main() {
 	createAndPushGitTag(buildNumber, profile, platform)
 }
 
-function kickOffBuild(
-	profile: BuildProfile,
-	platform: BuildPlatform,
-	autoSubmit: boolean,
-): number {
+function kickOffBuild(profile: BuildProfile, platform: BuildPlatform, autoSubmit: boolean): number {
 	const easArgs = [
 		"x",
 		"eas-cli@latest",
@@ -83,11 +79,7 @@ function kickOffBuild(
 	return buildNumber
 }
 
-function createAndPushGitTag(
-	buildNumber: number,
-	profile: BuildProfile,
-	platform: BuildPlatform,
-) {
+function createAndPushGitTag(buildNumber: number, profile: BuildProfile, platform: BuildPlatform) {
 	const status = spawnSync("git", ["status", "--porcelain"], {
 		encoding: "utf8",
 		stdio: ["inherit", "pipe", "inherit"],
