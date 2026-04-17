@@ -35,5 +35,16 @@
         "APP_VARIANT": "production"
       }
     }
+  },
+  "submit": {
+    "production": {
+      "ios": {
+        "appleId": "pvinis@gmail.com",
+        "appleTeamId": "CAG2W9M777",
+        "bundleIdentifier": "com.pvinis.hourbeeper",
+        "appName": "Hour Beeper",
+        "language": "en-US"
+      }
+    }
   }
 }

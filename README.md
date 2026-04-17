@@ -6,10 +6,10 @@ A minimal iOS-first Expo app that emits a brief recurring beep at selected times
 
 V1 ships with **two delivery engines** so the team can compare them on real devices before choosing the long-term default:
 
-| Mode | How it works | Tradeoff |
-|------|-------------|----------|
+| Mode             | How it works                                                                                    | Tradeoff                                                         |
+| ---------------- | ----------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
 | **Notification** | Schedules local notifications with a custom bundled sound. Works on all supported iOS versions. | May leave visible notification artifacts in Notification Center. |
-| **AlarmKit** | Uses iOS 26+ system alarms that override Focus and Silent mode. | More prominent system UI; requires newer iOS. |
+| **AlarmKit**     | Uses iOS 26+ system alarms that override Focus and Silent mode.                                 | More prominent system UI; requires newer iOS.                    |
 
 A **temporary delivery-mode switch** is visible in the settings screen during V1 evaluation. It will be removed once the team chooses a default.
 

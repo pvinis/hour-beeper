@@ -22,7 +22,7 @@ const appConfigDevelopment: VariantConfig = {
 	scheme: "hour-beeper-dev",
 	ios: {
 		bundleIdentifier: "com.pvinis.hourbeeper.dev",
-		icon: "./assets/app-icon.png",
+		icon: "./assets/app-icon-dev.png",
 	},
 }
 
@@ -32,7 +32,7 @@ const appConfigStaging: VariantConfig = {
 	scheme: "hour-beeper-staging",
 	ios: {
 		bundleIdentifier: "com.pvinis.hourbeeper.stag",
-		icon: "./assets/app-icon.png",
+		icon: "./assets/app-icon-staging.png",
 	},
 }
 
@@ -70,6 +70,7 @@ export default (): ExpoConfig => ({
 	slug: appConfig.slug,
 	version: packageJson.version,
 	scheme: appConfig.scheme,
+	owner: expoOwner,
 	orientation: "portrait",
 	userInterfaceStyle: "automatic",
 	icon: appConfig.ios.icon,
@@ -91,11 +92,19 @@ export default (): ExpoConfig => ({
 		["expo-dev-client", { launchMode: "most-recent" }],
 	],
 	experiments: {
+		buildCacheProvider: {
+			plugin: "expo-build-disk-cache",
+			options: {
+				cacheDir: "node_modules/.expo-build-disk-cache",
+				remotePlugin: "eas",
+			},
+		},
 		tsconfigPaths: true,
 		typedRoutes: true,
 	},
 	assetBundlePatterns: ["**/*"],
 	ios: {
+		appleTeamId,
 		bundleIdentifier: appConfig.ios.bundleIdentifier,
 		icon: appConfig.ios.icon,
 		infoPlist: {
