@@ -60,13 +60,27 @@ export default function HomeScreen() {
 					notificationStatus={notificationPermission}
 					alarmkitStatus={alarmkitPermission}
 					deliveryMode={settings.deliveryMode}
+					onRequestPermission={() => {
+						void requestPermissions()
+					}}
 				/>
 
 				{enabled && (
 					<>
 						<ScheduleSection />
 						<SoundSection />
-						<DeliveryModeSection />
+						<DeliveryModeSection
+							onModeSelected={(mode) => {
+								if (!enabled || mode === settings.deliveryMode) {
+									return
+								}
+
+								void requestPermissions({
+									...settings,
+									deliveryMode: mode,
+								})
+							}}
+						/>
 					</>
 				)}
 

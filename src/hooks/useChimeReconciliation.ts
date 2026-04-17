@@ -111,9 +111,12 @@ export function useChimeReconciliation() {
 		}
 	}
 
-	const requestPermissions = useCallback(async () => {
-		await reconcile(settings, true)
-	}, [reconcile, settings])
+	const requestPermissions = useCallback(
+		async (nextSettings: ChimeSettings = settings) => {
+			await reconcile(nextSettings, true)
+		},
+		[reconcile, settings],
+	)
 
 	return {
 		...state,

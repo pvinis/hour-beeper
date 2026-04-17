@@ -1,44 +1,53 @@
 import { cn } from "@/utils/twHelpers"
-import { Linking, Pressable, Text, View } from "react-native"
 import type { ChimePermissionStatus } from "@/features/chime/types"
+import { getPermissionBannerContent } from "./permissionBannerModel"
+import { Linking, Pressable, Text, View } from "react-native"
 
 interface PermissionBannerProps {
 	notificationStatus: ChimePermissionStatus
 	alarmkitStatus: ChimePermissionStatus
 	deliveryMode: "notification" | "alarmkit"
+	onRequestPermission?: () => void
 }
 
 export function PermissionBanner({
 	notificationStatus,
 	alarmkitStatus,
 	deliveryMode,
+	onRequestPermission,
 }: PermissionBannerProps) {
-	const activeStatus = deliveryMode === "notification" ? notificationStatus : alarmkitStatus
-	const isBlocked = activeStatus === "denied"
-	const isUnavailable = deliveryMode === "alarmkit" && alarmkitStatus === "unavailable"
+	const banner = getPermissionBannerContent({
+		notificationStatus,
+		alarmkitStatus,
+		deliveryMode,
+	})
 
-	if (!isBlocked && !isUnavailable) {
+	if (!banner) {
 		return null
 	}
+
+	const isBlocked = banner.tone === "blocked"
 
 	return (
 		<View className={cn("rounded-2xl px-4 py-3", isBlocked ? "bg-red-500/10" : "bg-yellow-500/10")}>
 			<Text className={cn("text-sm font-semibold", isBlocked ? "text-red-500" : "text-yellow-600")}>
-				{isUnavailable
-					? "AlarmKit unavailable"
-					: `${deliveryMode === "notification" ? "Notification" : "AlarmKit"} permission denied`}
+				{banner.title}
 			</Text>
-			<Text className="text-muted-foreground mt-1 text-xs leading-4">
-				{isUnavailable
-					? "AlarmKit requires iOS 26 or later. Notification mode is still available."
-					: "Open Settings to grant permission for chimes to work."}
-			</Text>
-			{isBlocked && (
+			<Text className="text-muted-foreground mt-1 text-xs leading-4">{banner.message}</Text>
+			{banner.action === "settings" && (
 				<Pressable
 					className="bg-primary mt-2 self-start rounded-full px-3 py-1.5"
 					onPress={() => void Linking.openSettings()}
 				>
-					<Text className="text-primary-foreground text-xs font-semibold">Open Settings</Text>
+					<Text className="text-primary-foreground text-xs font-semibold">{banner.actionLabel}</Text>
+				</Pressable>
+			)}
+			{banner.action === "request" && onRequestPermission && (
+				<Pressable
+					className="bg-primary mt-2 self-start rounded-full px-3 py-1.5"
+					onPress={onRequestPermission}
+				>
+					<Text className="text-primary-foreground text-xs font-semibold">{banner.actionLabel}</Text>
 				</Pressable>
 			)}
 		</View>

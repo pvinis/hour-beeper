@@ -18,7 +18,11 @@ const MODE_CONFIG: Record<
 	},
 }
 
-export function DeliveryModeSection() {
+interface DeliveryModeSectionProps {
+	onModeSelected?: (mode: DeliveryMode) => void
+}
+
+export function DeliveryModeSection({ onModeSelected }: DeliveryModeSectionProps) {
 	const [deliveryMode, setDeliveryMode] = useAtom(deliveryModeAtom)
 
 	return (
@@ -44,7 +48,14 @@ export function DeliveryModeSection() {
 								"px-4 py-3",
 								index < DELIVERY_MODES.length - 1 && "border-b border-border/50",
 							)}
-							onPress={() => setDeliveryMode(mode)}
+							onPress={() => {
+								if (isSelected) {
+									return
+								}
+
+								setDeliveryMode(mode)
+								onModeSelected?.(mode)
+							}}
 						>
 							<View className="flex-row items-center justify-between">
 								<Text className="text-foreground text-base font-medium">
