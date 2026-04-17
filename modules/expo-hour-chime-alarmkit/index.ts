@@ -1,4 +1,4 @@
-import { requireNativeModule } from "expo-modules-core"
+import { requireOptionalNativeModule } from "expo-modules-core"
 
 export type AlarmKitAuthorizationStatus = "authorized" | "denied" | "notDetermined" | "unavailable"
 
@@ -21,4 +21,7 @@ export interface ExpoHourChimeAlarmKitModuleType {
 	listScheduledAsync(): Promise<AlarmKitArtifact[]>
 }
 
-export default requireNativeModule<ExpoHourChimeAlarmKitModuleType>("ExpoHourChimeAlarmKit")
+const ExpoHourChimeAlarmKitModule =
+	requireOptionalNativeModule<ExpoHourChimeAlarmKitModuleType>("ExpoHourChimeAlarmKit")
+
+export default ExpoHourChimeAlarmKitModule

@@ -5,10 +5,14 @@
   "type": "module",
   "main": "index.js",
   "scripts": {
-    "dev": "expo start --dev-client --clear",
-    "start": "expo start --dev-client",
-    "ios": "expo run:ios --device",
-    "prebuild": "expo prebuild",
+    "dev": "APP_VARIANT=development expo start --dev-client --clear",
+    "start": "APP_VARIANT=development expo start --dev-client",
+    "ios": "APP_VARIANT=development bun scripts/ios.ts",
+    "build:dev:ios": "bun scripts/build.ts development ios",
+    "build:stag:ios": "bun scripts/build.ts staging ios",
+    "build:prod:ios": "bun scripts/build.ts production ios --auto-submit",
+    "run:ios": "bun x eas-cli@latest build:run -e development-sim -p ios --latest",
+    "prebuild": "APP_VARIANT=development expo prebuild",
     "typecheck": "tsc --noEmit",
     "lint": "oxlint --type-aware",
     "lint:fast": "oxlint",
@@ -16,7 +20,8 @@
     "tests": "vitest run",
     "tests:watch": "vitest",
     "doctor": "bun x expo-doctor@latest",
-    "clean": "rimraf ios android"
+    "clean": "rimraf ios android",
+    "eas": "bun x eas-cli@latest"
   },
   "dependencies": {
     "clsx": "^2.1.1",

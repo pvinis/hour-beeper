@@ -6,6 +6,7 @@ import { useState } from "react"
 import { Pressable, Text, View } from "react-native"
 
 const PRESET_LABELS: Record<PresetScheduleId, string> = {
+	"every-5-minutes": "Every 5 min",
 	"every-30-minutes": "Every 30 min",
 	hourly: "Hourly",
 	"every-2-hours": "Every 2 hours",

@@ -24,6 +24,20 @@ describe("materializeUpcomingOccurrences", () => {
 		])
 	})
 
+	it("materializes every 5 minutes from the next local 5-minute boundary", () => {
+		const schedule = { kind: "preset" as const, preset: "every-5-minutes" as const }
+		const from = DateTime.fromISO("2026-04-16T10:17:00", { zone: "UTC" })
+
+		const occurrences = materializeUpcomingOccurrences(schedule, { from, count: 4 })
+
+		expect(occurrences.map((occurrence) => occurrence.occursAt.toISO())).toEqual([
+			"2026-04-16T10:20:00.000Z",
+			"2026-04-16T10:25:00.000Z",
+			"2026-04-16T10:30:00.000Z",
+			"2026-04-16T10:35:00.000Z",
+		])
+	})
+
 	it("materializes only selected custom hours", () => {
 		const schedule = createCustomHoursSchedule([11, 16])
 		const from = DateTime.fromISO("2026-04-16T10:15:00", { zone: "UTC" })

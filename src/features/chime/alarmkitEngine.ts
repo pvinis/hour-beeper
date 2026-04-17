@@ -161,9 +161,13 @@ export async function reconcileAlarmKitSchedule(
 	}
 }
 
-export async function createExpoAlarmKitClient(): Promise<AlarmKitClient> {
+export async function createExpoAlarmKitClient(): Promise<AlarmKitClient | null> {
 	const module = await import("../../../modules/expo-hour-chime-alarmkit")
 	const AlarmKitModule = module.default
+
+	if (!AlarmKitModule) {
+		return null
+	}
 
 	return {
 		isAvailableAsync: () => AlarmKitModule.isAvailableAsync(),

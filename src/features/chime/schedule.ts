@@ -131,6 +131,12 @@ function sanitizeSchedule(value: unknown): ChimeSchedule {
 
 function getPresetScheduleTimes(preset: PresetScheduleId): LocalTime[] {
 	switch (preset) {
+		case "every-5-minutes":
+			return normalizeLocalTimes(
+				Array.from({ length: 24 }, (_hourValue, hour) =>
+					Array.from({ length: 12 }, (_minuteValue, index) => ({ hour, minute: index * 5 })),
+				).flat(),
+			)
 		case "every-30-minutes":
 			return normalizeLocalTimes(
 				Array.from({ length: 24 }, (_, hour) => [

@@ -4,6 +4,59 @@ import { execSync } from "child_process"
 import type { ExpoConfig } from "@expo/config-types"
 import packageJson from "./package.json" with { type: "json" }
 
+type AppVariant = "development" | "staging" | "production"
+
+type VariantConfig = {
+	name: string
+	slug: string
+	scheme: string
+	ios: {
+		bundleIdentifier: string
+		icon: string
+	}
+}
+
+const appConfigDevelopment: VariantConfig = {
+	name: "Hour Beeper Dev",
+	slug: "hour-beeper",
+	scheme: "hour-beeper-dev",
+	ios: {
+		bundleIdentifier: "com.pvinis.hourbeeper.dev",
+		icon: "./assets/app-icon.png",
+	},
+}
+
+const appConfigStaging: VariantConfig = {
+	name: "Hour Beeper Staging",
+	slug: "hour-beeper",
+	scheme: "hour-beeper-staging",
+	ios: {
+		bundleIdentifier: "com.pvinis.hourbeeper.stag",
+		icon: "./assets/app-icon.png",
+	},
+}
+
+const appConfigProduction: VariantConfig = {
+	name: "Hour Beeper",
+	slug: "hour-beeper",
+	scheme: "hour-beeper",
+	ios: {
+		bundleIdentifier: "com.pvinis.hourbeeper",
+		icon: "./assets/app-icon.png",
+	},
+}
+
+const configs: Record<AppVariant, VariantConfig> = {
+	development: appConfigDevelopment,
+	staging: appConfigStaging,
+	production: appConfigProduction,
+}
+
+const isAppVariant = (value: string): value is AppVariant => value in configs
+const envVariant = process.env.APP_VARIANT ?? "development"
+const appVariant: AppVariant = isAppVariant(envVariant) ? envVariant : "development"
+const appConfig = configs[appVariant]
+
 const gitCommit = (() => {
 	try {
 		return execSync("git rev-parse --short HEAD").toString().trim()
@@ -13,13 +66,13 @@ const gitCommit = (() => {
 })()
 
 export default (): ExpoConfig => ({
-	name: "Hour Beeper",
-	slug: "hour-beeper",
+	name: appConfig.name,
+	slug: appConfig.slug,
 	version: packageJson.version,
-	scheme: "hour-beeper",
+	scheme: appConfig.scheme,
 	orientation: "portrait",
 	userInterfaceStyle: "automatic",
-	icon: "./assets/app-icon.png",
+	icon: appConfig.ios.icon,
 	plugins: [
 		"./plugins/withXcodeEnv",
 		"expo-router",
@@ -43,8 +96,8 @@ export default (): ExpoConfig => ({
 	},
 	assetBundlePatterns: ["**/*"],
 	ios: {
-		bundleIdentifier: "com.pvinis.hourbeeper",
-		icon: "./assets/app-icon.png",
+		bundleIdentifier: appConfig.ios.bundleIdentifier,
+		icon: appConfig.ios.icon,
 		infoPlist: {
 			ITSAppUsesNonExemptEncryption: false,
 			NSAlarmKitUsageDescription:
@@ -52,6 +105,7 @@ export default (): ExpoConfig => ({
 		},
 	},
 	extra: {
+		appVariant,
 		gitCommit,
 	},
 })

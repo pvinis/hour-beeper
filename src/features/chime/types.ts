@@ -3,6 +3,7 @@ import type { DateTime } from "luxon"
 export const CHIME_SOUND_IDS = ["casio", "classic", "soft", "digital"] as const
 export const DELIVERY_MODES = ["notification", "alarmkit"] as const
 export const PRESET_SCHEDULE_IDS = [
+	"every-5-minutes",
 	"every-30-minutes",
 	"hourly",
 	"every-2-hours",

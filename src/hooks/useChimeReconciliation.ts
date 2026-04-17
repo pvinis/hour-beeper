@@ -98,7 +98,9 @@ export function useChimeReconciliation() {
 			try {
 				const { createExpoAlarmKitClient } = await import("@/features/chime/alarmkitEngine")
 				const alarmkitClient = await createExpoAlarmKitClient()
-				depsRef.current.alarmkitClient = alarmkitClient
+				if (alarmkitClient) {
+					depsRef.current.alarmkitClient = alarmkitClient
+				}
 			} catch {
 				// AlarmKit unavailable — keep notification-only deps
 			}
