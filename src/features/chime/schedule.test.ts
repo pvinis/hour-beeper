@@ -24,17 +24,17 @@ describe("materializeUpcomingOccurrences", () => {
 		])
 	})
 
-	it("materializes every 5 minutes from the next local 5-minute boundary", () => {
-		const schedule = { kind: "preset" as const, preset: "every-5-minutes" as const }
+	it("materializes every minute from the next local minute boundary", () => {
+		const schedule = { kind: "preset" as const, preset: "every-minute" as const }
 		const from = DateTime.fromISO("2026-04-16T10:17:00", { zone: "UTC" })
 
 		const occurrences = materializeUpcomingOccurrences(schedule, { from, count: 4 })
 
 		expect(occurrences.map((occurrence) => occurrence.occursAt.toISO())).toEqual([
+			"2026-04-16T10:18:00.000Z",
+			"2026-04-16T10:19:00.000Z",
 			"2026-04-16T10:20:00.000Z",
-			"2026-04-16T10:25:00.000Z",
-			"2026-04-16T10:30:00.000Z",
-			"2026-04-16T10:35:00.000Z",
+			"2026-04-16T10:21:00.000Z",
 		])
 	})
 
@@ -111,6 +111,17 @@ describe("sanitizeChimeSettings", () => {
 		})
 
 		expect(sanitized).toEqual(DEFAULT_CHIME_SETTINGS)
+	})
+
+	it("migrates legacy every-5-minutes settings to every-minute", () => {
+		const sanitized = sanitizeChimeSettings({
+			enabled: true,
+			schedule: { kind: "preset", preset: "every-5-minutes" },
+			sound: "digital",
+			deliveryMode: "notification",
+		})
+
+		expect(sanitized.schedule).toEqual({ kind: "preset", preset: "every-minute" })
 	})
 
 	it("preserves schedule and sound choices when switching delivery mode", () => {

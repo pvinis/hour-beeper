@@ -107,6 +107,10 @@ function sanitizeSchedule(value: unknown): ChimeSchedule {
 	}
 
 	if (value.kind === "preset") {
+		if (value.preset === "every-5-minutes") {
+			return { kind: "preset", preset: "every-minute" }
+		}
+
 		return isPresetScheduleId(value.preset)
 			? { kind: "preset", preset: value.preset }
 			: DEFAULT_CHIME_SETTINGS.schedule
@@ -131,10 +135,10 @@ function sanitizeSchedule(value: unknown): ChimeSchedule {
 
 function getPresetScheduleTimes(preset: PresetScheduleId): LocalTime[] {
 	switch (preset) {
-		case "every-5-minutes":
+		case "every-minute":
 			return normalizeLocalTimes(
 				Array.from({ length: 24 }, (_hourValue, hour) =>
-					Array.from({ length: 12 }, (_minuteValue, index) => ({ hour, minute: index * 5 })),
+					Array.from({ length: 60 }, (_minuteValue, minute) => ({ hour, minute })),
 				).flat(),
 			)
 		case "every-30-minutes":
