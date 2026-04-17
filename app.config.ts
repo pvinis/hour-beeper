@@ -105,7 +105,7 @@ export default (): ExpoConfig => ({
 		},
 	},
 	extra: {
-		appVariant,
+		eas: { projectId: "9c602eea-1e88-4851-8243-4046d4a056d9" },
 		gitCommit,
 	},
 })
