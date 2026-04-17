@@ -70,7 +70,7 @@ export default (): ExpoConfig => ({
 	slug: appConfig.slug,
 	version: packageJson.version,
 	scheme: appConfig.scheme,
-	owner: expoOwner,
+	owner: "pvinis",
 	orientation: "portrait",
 	userInterfaceStyle: "automatic",
 	icon: appConfig.ios.icon,
@@ -104,7 +104,7 @@ export default (): ExpoConfig => ({
 	},
 	assetBundlePatterns: ["**/*"],
 	ios: {
-		appleTeamId,
+		appleTeamId: "CAG2W9M777",
 		bundleIdentifier: appConfig.ios.bundleIdentifier,
 		icon: appConfig.ios.icon,
 		infoPlist: {
