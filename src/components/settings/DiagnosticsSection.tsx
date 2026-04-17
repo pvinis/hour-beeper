@@ -1,4 +1,5 @@
 import { diagnosticsAtom } from "@/storage/persist"
+import { formatPermissionStatus } from "./diagnosticsDisplay"
 import { useAtomValue } from "jotai"
 import { useState } from "react"
 import { Pressable, Text, View } from "react-native"
@@ -23,8 +24,14 @@ export function DiagnosticsSection() {
 			<View className="bg-card rounded-2xl px-4 py-3">
 				<DiagnosticRow label="Version" value={`${appVersion} (${gitCommit})`} />
 				<DiagnosticRow label="Active mode" value={diagnostics.activeMode} />
-				<DiagnosticRow label="Notification permission" value={diagnostics.notificationPermission} />
-				<DiagnosticRow label="AlarmKit permission" value={diagnostics.alarmkitPermission} />
+				<DiagnosticRow
+					label="Notification permission"
+					value={formatPermissionStatus(diagnostics.notificationPermission)}
+				/>
+				<DiagnosticRow
+					label="AlarmKit permission"
+					value={formatPermissionStatus(diagnostics.alarmkitPermission)}
+				/>
 				<DiagnosticRow
 					label="Last reconciled"
 					value={
