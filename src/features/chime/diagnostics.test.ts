@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest"
 
 import {
 	DEFAULT_DIAGNOSTICS_STATE,
+	formatReconciliationStatus,
+	formatRepeaterCount,
 	recordReconciliation,
 	sanitizeDiagnostics,
 	type DiagnosticsState,
@@ -11,12 +13,12 @@ describe("recordReconciliation", () => {
 	it("reflects notification permissions and the most recent reconciliation", () => {
 		const next = recordReconciliation(DEFAULT_DIAGNOSTICS_STATE, {
 			status: "scheduled",
-			artifactCount: 24,
+			artifactCount: 1,
 			notificationPermission: "granted",
 		})
 
 		expect(next.notificationPermission).toBe("granted")
-		expect(next.lastScheduledArtifactCount).toBe(24)
+		expect(next.lastScheduledArtifactCount).toBe(1)
 		expect(next.lastReconciledAt).toBeTruthy()
 		expect(next.lastError).toBeNull()
 		expect(next.history).toHaveLength(1)
@@ -42,8 +44,8 @@ describe("recordReconciliation", () => {
 			history: [
 				{
 					timestamp: "2026-04-15T10:00:00.000Z",
-					status: "scheduled",
-					artifactCount: 24,
+					status: "migrated",
+					artifactCount: 2,
 				},
 			],
 			lastReconciledAt: "2026-04-15T10:00:00.000Z",
@@ -51,12 +53,26 @@ describe("recordReconciliation", () => {
 
 		state = recordReconciliation(state, {
 			status: "scheduled",
-			artifactCount: 24,
+			artifactCount: 1,
 			notificationPermission: "granted",
 		})
 
 		expect(state.history).toHaveLength(2)
 		expect(state.history[1]?.timestamp).toBe("2026-04-15T10:00:00.000Z")
+	})
+})
+
+describe("diagnostics formatting", () => {
+	it("formats repeater counts with singular and plural labels", () => {
+		expect(formatRepeaterCount(1)).toBe("1 repeater")
+		expect(formatRepeaterCount(2)).toBe("2 repeaters")
+		expect(formatRepeaterCount(null)).toBe("—")
+	})
+
+	it("formats migrated status with repeater-specific wording", () => {
+		expect(formatReconciliationStatus("migrated")).toBe("migrated to repeaters")
+		expect(formatReconciliationStatus("scheduled")).toBe("scheduled")
+		expect(formatReconciliationStatus("mystery")).toBe("mystery")
 	})
 })
 
@@ -78,8 +94,8 @@ describe("sanitizeDiagnostics", () => {
 				{
 					timestamp: "2026-04-15T10:00:00.000Z",
 					mode: "notification",
-					status: "scheduled",
-					artifactCount: 24,
+					status: "migrated",
+					artifactCount: 1,
 				},
 			],
 		})
@@ -88,8 +104,8 @@ describe("sanitizeDiagnostics", () => {
 		expect(sanitized.history).toEqual([
 			{
 				timestamp: "2026-04-15T10:00:00.000Z",
-				status: "scheduled",
-				artifactCount: 24,
+				status: "migrated",
+				artifactCount: 1,
 			},
 		])
 	})

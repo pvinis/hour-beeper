@@ -49,6 +49,33 @@ export function recordReconciliation(
 	}
 }
 
+export function formatReconciliationStatus(status: string) {
+	switch (status) {
+		case "migrated":
+			return "migrated to repeaters"
+		case "scheduled":
+			return "scheduled"
+		case "unchanged":
+			return "unchanged"
+		case "blocked":
+			return "blocked"
+		case "cleared":
+			return "cleared"
+		case "error":
+			return "error"
+		default:
+			return status
+	}
+}
+
+export function formatRepeaterCount(count: number | null) {
+	if (count == null) {
+		return "—"
+	}
+
+	return `${count} ${count === 1 ? "repeater" : "repeaters"}`
+}
+
 export function sanitizeDiagnostics(value: unknown): DiagnosticsState {
 	if (!isRecord(value)) {
 		return DEFAULT_DIAGNOSTICS_STATE
