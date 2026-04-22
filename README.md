@@ -8,7 +8,7 @@ Hour Beeper now ships with a single delivery path:
 
 | Path | How it works | Tradeoff |
 | --- | --- | --- |
-| **Notifications** | Schedules local notifications with a custom bundled sound. Works on all supported iOS versions. | Uses grouping and best-effort cleanup to keep the stack small, but terminated-app delivery may still leave visible artifacts. |
+| **Notifications** | Schedules slot-based repeating local notifications with a custom bundled sound. Works on all supported iOS versions. | Uses grouping and best-effort cleanup to keep the stack small, but terminated-app delivery may still leave visible artifacts. |
 
 ## Bundled Sounds
 
@@ -23,7 +23,7 @@ Use the in-app diagnostics section to track:
 
 - notification permission state
 - last reconciliation time
-- scheduled artifact count
+- scheduled repeater count (`hourly` = `1`, `every-30-minutes` = `2`, `every-2-hours` = `12`)
 - current app version / git commit
 
 ## Getting Started
@@ -47,7 +47,7 @@ For Simulator-only work:
 bun x expo run:ios
 ```
 
-> **Note:** Physical-device testing is still required for notification delivery, custom sound playback, Notification Center cleanup behavior, and reboot/relaunch alignment.
+> **Note:** Physical-device testing is still required for repeating notification delivery, custom sound playback, Notification Center cleanup behavior, reboot/relaunch alignment, and timezone/DST/local-clock validation.
 >
 > If you previously ran an older internal AlarmKit dogfood build, do a manual reset/uninstall before testing the current notification-only app.
 

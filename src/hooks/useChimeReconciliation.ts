@@ -63,6 +63,14 @@ export function useChimeReconciliation() {
 				if (mountedRef.current) {
 					setState((prev) => ({ ...prev, isReconciling: false }))
 				}
+
+				setDiagnostics((prev) =>
+					recordReconciliation(prev, {
+						status: "error",
+						artifactCount: null,
+						error: error instanceof Error ? error.message : String(error),
+					}),
+				)
 			}
 		},
 		[setDiagnostics],

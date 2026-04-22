@@ -1,5 +1,3 @@
-import { DateTime } from "luxon"
-
 import {
 	getNotificationPermissionState,
 	requestNotificationPermissionState,
@@ -7,13 +5,13 @@ import {
 	type NotificationPermissionResponse,
 	type NotificationPermissionState,
 } from "./permissions"
-import { materializeUpcomingOccurrences } from "./schedule"
-import type { ChimeSettings, ChimeSound } from "./types"
+import { getScheduleTimes } from "./schedule"
+import type { ChimeSettings, ChimeSound, LocalTime } from "./types"
 
 const NOTIFICATION_ID_PREFIX = "hour-beeper.notification"
 const NOTIFICATION_SOURCE = "hour-beeper"
 const NOTIFICATION_THREAD_IDENTIFIER = "hour-beeper.chimes"
-const DEFAULT_NOTIFICATION_COUNT = 24
+const REPEATING_INTERVAL_SECONDS = 60
 
 const SOUND_FILES: Record<ChimeSound, string> = {
 	casio: "casio-beep.wav",
@@ -24,8 +22,8 @@ const SOUND_FILES: Record<ChimeSound, string> = {
 
 export interface HourBeeperNotificationData extends Record<string, unknown> {
 	source: typeof NOTIFICATION_SOURCE
-	occurrenceId: string
-	scheduledFor: string
+	slotKey: string
+	triggerType: "calendar" | "timeInterval"
 	sound: ChimeSound
 }
 
@@ -38,11 +36,49 @@ export interface HourBeeperNotificationContent {
 	interruptionLevel: "active"
 }
 
+export type HourBeeperNotificationTrigger =
+	| {
+			type: "calendar"
+			repeats: true
+			hour?: number
+			minute?: number
+			second?: number
+			timezone?: string
+	  }
+	| {
+			type: "timeInterval"
+			repeats: true
+			seconds: number
+	  }
+
 export interface HourBeeperNotificationRequest {
 	identifier: string
-	occursAt: DateTime
+	trigger: HourBeeperNotificationTrigger
 	content: HourBeeperNotificationContent
 }
+
+export type NotificationTriggerRecord =
+	| {
+			type: "calendar"
+			repeats?: boolean
+			hour?: number
+			minute?: number
+			second?: number
+			timezone?: string | null
+	  }
+	| {
+			type: "timeInterval"
+			repeats?: boolean
+			seconds: number
+	  }
+	| {
+			type: "date"
+			date?: string | number | Date | null
+	  }
+	| {
+			type: "unknown"
+			rawType?: string | null
+	  }
 
 interface NotificationRecordContent {
 	sound?: string | boolean | null
@@ -53,6 +89,8 @@ interface NotificationRecordContent {
 export interface NotificationRecord {
 	identifier: string
 	content: NotificationRecordContent
+	trigger?: NotificationTriggerRecord | null
+	date?: number | null
 }
 
 export type ScheduledNotificationRecord = NotificationRecord
@@ -67,7 +105,7 @@ export interface NotificationClient extends NotificationPermissionClient {
 }
 
 export interface NotificationReconciliationResult {
-	status: "scheduled" | "unchanged" | "cleared" | "blocked"
+	status: "scheduled" | "migrated" | "unchanged" | "cleared" | "blocked"
 	permission: NotificationPermissionState
 	canceledIds: string[]
 	scheduledIds: string[]
@@ -88,9 +126,11 @@ interface NotificationHandlerModule {
 }
 
 interface NotificationRuntimeEvent {
+	date: number
 	request: {
 		identifier: string
 		content: NotificationRecordContent
+		trigger?: unknown
 	}
 }
 
@@ -117,8 +157,8 @@ let notificationRuntimeCleanup: (() => void) | null = null
 
 export function buildNotificationRequests(
 	settings: ChimeSettings,
-	options: {
-		from?: DateTime
+	_options: {
+		from?: unknown
 		count?: number
 	} = {},
 ): HourBeeperNotificationRequest[] {
@@ -126,37 +166,32 @@ export function buildNotificationRequests(
 		return []
 	}
 
-	return materializeUpcomingOccurrences(settings.schedule, {
-		from: options.from,
-		count: options.count ?? DEFAULT_NOTIFICATION_COUNT,
-	}).map((occurrence) => {
-		const identifier = createNotificationIdentifier(occurrence.occursAt)
+	const slots = getNotificationSlots(settings)
 
-		return {
-			identifier,
-			occursAt: occurrence.occursAt,
-			content: {
-				title: "Hour Beeper",
-				body: `Chime for ${occurrence.occursAt.toFormat("HH:mm")}`,
-				sound: SOUND_FILES[settings.sound],
-				data: {
-					source: NOTIFICATION_SOURCE,
-					occurrenceId: identifier,
-					scheduledFor: occurrence.occursAt.toISO() ?? identifier,
-					sound: settings.sound,
-				},
-				threadIdentifier: NOTIFICATION_THREAD_IDENTIFIER,
-				interruptionLevel: "active",
+	return slots.map((slot) => ({
+		identifier: createNotificationIdentifier(slot),
+		trigger: slot.trigger,
+		content: {
+			title: "Hour Beeper",
+			body: slot.body,
+			sound: SOUND_FILES[settings.sound],
+			data: {
+				source: NOTIFICATION_SOURCE,
+				slotKey: slot.slotKey,
+				triggerType: slot.trigger.type,
+				sound: settings.sound,
 			},
-		}
-	})
+			threadIdentifier: NOTIFICATION_THREAD_IDENTIFIER,
+			interruptionLevel: "active",
+		},
+	}))
 }
 
 export async function reconcileNotificationSchedule(
 	client: NotificationClient,
 	settings: ChimeSettings,
 	options: {
-		from?: DateTime
+		from?: unknown
 		count?: number
 		requestPermissionsIfNeeded?: boolean
 	} = {},
@@ -204,13 +239,14 @@ export async function reconcileNotificationSchedule(
 
 	const canceledIds = await cancelNotifications(client, existing)
 	const scheduledIds: string[] = []
+	const didMigrateLegacyRequests = existing.some((record) => record.trigger?.type === "date")
 
 	for (const request of desired) {
 		scheduledIds.push(await client.scheduleNotificationAsync(request))
 	}
 
 	return {
-		status: "scheduled",
+		status: didMigrateLegacyRequests ? "migrated" : "scheduled",
 		permission,
 		canceledIds,
 		scheduledIds,
@@ -239,19 +275,24 @@ export async function dismissPreviousPresentedHourBeeperNotification(
 	client: NotificationClient,
 	currentRecord: PresentedNotificationRecord,
 ) {
-	const currentScheduledAt = getScheduledForMillis(currentRecord)
-	if (currentScheduledAt === null) {
+	if (!isHourBeeperNotification(currentRecord)) {
+		return null
+	}
+
+	const currentDeliveredAt = getNotificationSortTimestamp(currentRecord)
+	if (currentDeliveredAt === null) {
 		return null
 	}
 
 	try {
-		const previousRecord = getOrderedPresentedHourBeeperNotifications(
-			await client.getPresentedNotificationsAsync(),
-		)
-			.filter(({ scheduledAt }) => scheduledAt < currentScheduledAt)
-			.at(-1)?.record
+		const orderedPresented = getOrderedPresentedHourBeeperNotifications([
+			...(await client.getPresentedNotificationsAsync()),
+			currentRecord,
+		])
+		const currentIndex = orderedPresented.findIndex(({ record }) => record === currentRecord)
+		const previousRecord = currentIndex > 0 ? orderedPresented[currentIndex - 1]?.record : null
 
-		if (!previousRecord) {
+		if (!previousRecord || getNotificationSortTimestamp(previousRecord) === currentDeliveredAt && previousRecord.identifier === currentRecord.identifier) {
 			return null
 		}
 
@@ -326,6 +367,8 @@ export async function configureNotificationRuntime(
 		void dismissPreviousPresentedHourBeeperNotification(client, {
 			identifier: notification.request.identifier,
 			content: notification.request.content,
+			trigger: normalizeTrigger(notification.request.trigger),
+			date: notification.date,
 		})
 	})
 
@@ -365,23 +408,27 @@ export async function createExpoNotificationClient(): Promise<NotificationClient
 		getAllScheduledNotificationsAsync: async () => {
 			const requests = await Notifications.getAllScheduledNotificationsAsync()
 
-			return requests.map((request) => toNotificationRecord(request.identifier, request.content))
+			return requests.map((request) =>
+				toNotificationRecord(request.identifier, request.content, normalizeTrigger(request.trigger)),
+			)
 		},
 		getPresentedNotificationsAsync: async () => {
 			const notifications = await Notifications.getPresentedNotificationsAsync()
 
 			return notifications.map((notification) =>
-				toNotificationRecord(notification.request.identifier, notification.request.content),
+				toNotificationRecord(
+					notification.request.identifier,
+					notification.request.content,
+					normalizeTrigger(notification.request.trigger),
+					notification.date,
+				),
 			)
 		},
 		scheduleNotificationAsync: (request) =>
 			Notifications.scheduleNotificationAsync({
 				identifier: request.identifier,
 				content: request.content,
-				trigger: {
-					type: Notifications.SchedulableTriggerInputTypes.DATE,
-					date: request.occursAt.toJSDate(),
-				},
+				trigger: toExpoTriggerInput(Notifications, request.trigger),
 			}),
 		cancelScheduledNotificationAsync: (identifier) =>
 			Notifications.cancelScheduledNotificationAsync(identifier),
@@ -389,8 +436,76 @@ export async function createExpoNotificationClient(): Promise<NotificationClient
 	}
 }
 
-function createNotificationIdentifier(occursAt: DateTime) {
-	return `${NOTIFICATION_ID_PREFIX}.${occursAt.toUTC().toISO()}`
+interface NotificationSlot {
+	slotKey: string
+	body: string
+	trigger: HourBeeperNotificationTrigger
+}
+
+function getNotificationSlots(settings: ChimeSettings): NotificationSlot[] {
+	if (settings.schedule.kind === "preset") {
+		switch (settings.schedule.preset) {
+			case "every-minute":
+				return [
+					{
+						slotKey: `interval:${REPEATING_INTERVAL_SECONDS}s`,
+						body: "Chime every minute",
+						trigger: {
+							type: "timeInterval",
+							repeats: true,
+							seconds: REPEATING_INTERVAL_SECONDS,
+						},
+					},
+				]
+			case "hourly":
+				return [createMinuteOnlySlot(0)]
+			case "every-30-minutes":
+				return [createMinuteOnlySlot(0), createMinuteOnlySlot(30)]
+		}
+	}
+
+	return getScheduleTimes(settings.schedule).map(createLocalTimeSlot)
+}
+
+function createMinuteOnlySlot(minute: number): NotificationSlot {
+	return {
+		slotKey: `minute:${pad2(minute)}`,
+		body: `Chime for :${pad2(minute)}`,
+		trigger: {
+			type: "calendar",
+			repeats: true,
+			minute,
+		},
+	}
+}
+
+function createLocalTimeSlot(localTime: LocalTime): NotificationSlot {
+	return {
+		slotKey: toSlotKey(localTime),
+		body: `Chime for ${toSlotKey(localTime)}`,
+		trigger: {
+			type: "calendar",
+			repeats: true,
+			hour: localTime.hour,
+			minute: localTime.minute,
+		},
+	}
+}
+
+function createNotificationIdentifier(slot: NotificationSlot) {
+	return `${NOTIFICATION_ID_PREFIX}.${slot.trigger.type}.${normalizeIdentifierSegment(slot.slotKey)}`
+}
+
+function toSlotKey(localTime: LocalTime) {
+	return `${pad2(localTime.hour)}:${pad2(localTime.minute)}`
+}
+
+function normalizeIdentifierSegment(value: string) {
+	return value.replaceAll(":", "-")
+}
+
+function pad2(value: number) {
+	return value.toString().padStart(2, "0")
 }
 
 function hasMatchingNotificationPlan(
@@ -401,7 +516,7 @@ function hasMatchingNotificationPlan(
 		return false
 	}
 
-	const existingFingerprints = new Set(existing.map(getRecordFingerprint).filter(Boolean))
+	const existingFingerprints = new Set(existing.map(getRecordFingerprint))
 
 	if (existingFingerprints.size !== desired.length) {
 		return false
@@ -430,6 +545,9 @@ function getRequestFingerprint(request: HourBeeperNotificationRequest) {
 		request.content.sound,
 		request.content.data.sound,
 		request.content.threadIdentifier,
+		request.content.data.slotKey,
+		request.content.data.triggerType,
+		getTriggerFingerprint(request.trigger),
 	].join("|")
 }
 
@@ -440,8 +558,46 @@ function getRecordFingerprint(record: NotificationRecord) {
 	const threadIdentifier = typeof record.content.threadIdentifier === "string"
 		? record.content.threadIdentifier
 		: ""
+	const slotKey = getDataSlotKey(data) ?? ""
+	const triggerType = getDataTriggerType(data) ?? ""
 
-	return [record.identifier, sound, soundId, threadIdentifier].join("|")
+	return [
+		record.identifier,
+		sound,
+		soundId,
+		threadIdentifier,
+		slotKey,
+		triggerType,
+		getTriggerFingerprint(record.trigger),
+	].join("|")
+}
+
+function getTriggerFingerprint(trigger?: NotificationTriggerRecord | HourBeeperNotificationTrigger | null) {
+	if (!trigger) {
+		return "none"
+	}
+
+	switch (trigger.type) {
+		case "calendar":
+			return [
+				"calendar",
+				trigger.repeats ? "repeat" : "once",
+				trigger.hour ?? "*",
+				trigger.minute ?? "*",
+				trigger.second ?? "*",
+				trigger.timezone ?? "local",
+			].join(":")
+		case "timeInterval":
+			return ["timeInterval", trigger.repeats ? "repeat" : "once", trigger.seconds].join(":")
+		case "date":
+			return "date:stale"
+		case "unknown":
+			return `unknown:${trigger.rawType ?? "unknown"}`
+		default: {
+			const exhaustiveTrigger: never = trigger
+			return exhaustiveTrigger
+		}
+	}
 }
 
 function getOrderedPresentedHourBeeperNotifications(records: PresentedNotificationRecord[]) {
@@ -449,31 +605,43 @@ function getOrderedPresentedHourBeeperNotifications(records: PresentedNotificati
 		.filter(isHourBeeperNotification)
 		.map((record) => ({
 			record,
-			scheduledAt: getScheduledForMillis(record),
+			sortTimestamp: getNotificationSortTimestamp(record),
+			slotKey: getDataSlotKey(record.content.data) ?? "",
 		}))
-		.filter((entry): entry is { record: PresentedNotificationRecord; scheduledAt: number } =>
-			typeof entry.scheduledAt === "number",
-		)
 		.sort((left, right) => {
-			if (left.scheduledAt !== right.scheduledAt) {
-				return left.scheduledAt - right.scheduledAt
+			const leftTimestamp = left.sortTimestamp ?? Number.NEGATIVE_INFINITY
+			const rightTimestamp = right.sortTimestamp ?? Number.NEGATIVE_INFINITY
+
+			if (leftTimestamp !== rightTimestamp) {
+				return leftTimestamp - rightTimestamp
+			}
+
+			if (left.slotKey !== right.slotKey) {
+				return left.slotKey.localeCompare(right.slotKey)
 			}
 
 			return left.record.identifier.localeCompare(right.record.identifier)
 		})
 }
 
-function getScheduledForMillis(record: NotificationRecord) {
-	const data = record.content.data
-	const scheduledFor = isRecord(data) && typeof data.scheduledFor === "string"
-		? data.scheduledFor
-		: null
-	if (!scheduledFor) {
-		return null
+function getNotificationSortTimestamp(record: NotificationRecord) {
+	if (typeof record.date === "number" && Number.isFinite(record.date)) {
+		return record.date
 	}
 
-	const scheduledAt = DateTime.fromISO(scheduledFor)
-	return scheduledAt.isValid ? scheduledAt.toMillis() : null
+	if (record.trigger?.type === "date") {
+		const triggerDate = toTimestamp(record.trigger.date)
+		if (triggerDate !== null) {
+			return triggerDate
+		}
+	}
+
+	const data = record.content.data
+	if (isRecord(data) && typeof data.scheduledFor === "string") {
+		return toTimestamp(data.scheduledFor)
+	}
+
+	return null
 }
 
 function isHourBeeperNotification(record: NotificationRecord) {
@@ -493,6 +661,8 @@ function toNotificationRecord(
 		data?: Record<string, unknown>
 		threadIdentifier?: string | null
 	},
+	trigger?: NotificationTriggerRecord | null,
+	date?: number | null,
 ): NotificationRecord {
 	return {
 		identifier,
@@ -501,7 +671,108 @@ function toNotificationRecord(
 			data: content.data,
 			threadIdentifier: content.threadIdentifier,
 		},
+		trigger: trigger ?? null,
+		date: typeof date === "number" ? date : null,
 	}
+}
+
+function normalizeTrigger(trigger: unknown): NotificationTriggerRecord | null {
+	if (!isRecord(trigger) || typeof trigger.type !== "string") {
+		return null
+	}
+
+	switch (trigger.type) {
+		case "calendar":
+			return {
+				type: "calendar",
+				repeats: typeof trigger.repeats === "boolean" ? trigger.repeats : undefined,
+				hour: toInteger(trigger.hour),
+				minute: toInteger(trigger.minute),
+				second: toInteger(trigger.second),
+				timezone: typeof trigger.timezone === "string" ? trigger.timezone : null,
+			}
+		case "timeInterval":
+			return typeof trigger.seconds === "number"
+				? {
+						type: "timeInterval",
+						repeats: typeof trigger.repeats === "boolean" ? trigger.repeats : undefined,
+						seconds: trigger.seconds,
+					}
+				: { type: "unknown", rawType: trigger.type }
+		case "date":
+			return {
+				type: "date",
+				date:
+					trigger.date instanceof Date || typeof trigger.date === "number" || typeof trigger.date === "string"
+						? trigger.date
+						: null,
+			}
+		default:
+			return {
+				type: "unknown",
+				rawType: trigger.type,
+			}
+	}
+}
+
+function toExpoTriggerInput(
+	Notifications: typeof import("expo-notifications"),
+	trigger: HourBeeperNotificationTrigger,
+): import("expo-notifications").NotificationTriggerInput {
+	switch (trigger.type) {
+		case "calendar":
+			return {
+				type: Notifications.SchedulableTriggerInputTypes.CALENDAR as import("expo-notifications").SchedulableTriggerInputTypes.CALENDAR,
+				repeats: trigger.repeats,
+				hour: trigger.hour,
+				minute: trigger.minute,
+				second: trigger.second,
+			}
+		case "timeInterval":
+			return {
+				type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL as import("expo-notifications").SchedulableTriggerInputTypes.TIME_INTERVAL,
+				repeats: trigger.repeats,
+				seconds: trigger.seconds,
+			}
+		default: {
+			const exhaustiveTrigger: never = trigger
+			return exhaustiveTrigger
+		}
+	}
+}
+
+function getDataSlotKey(data: unknown) {
+	return isRecord(data) && typeof data.slotKey === "string" ? data.slotKey : null
+}
+
+function getDataTriggerType(data: unknown) {
+	return isRecord(data) && typeof data.triggerType === "string" ? data.triggerType : null
+}
+
+function toTimestamp(value: unknown) {
+	if (typeof value === "number" && Number.isFinite(value)) {
+		return value
+	}
+
+	if (value instanceof Date) {
+		const millis = value.getTime()
+		return Number.isFinite(millis) ? millis : null
+	}
+
+	if (typeof value === "string") {
+		const millis = Date.parse(value)
+		return Number.isNaN(millis) ? null : millis
+	}
+
+	return null
+}
+
+function toInteger(value: unknown) {
+	return typeof value === "number" && Number.isInteger(value) ? value : undefined
+}
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+	return typeof value === "object" && value !== null
 }
 
 async function loadNotificationRuntimeModule(): Promise<NotificationRuntimeModule> {
@@ -516,8 +787,4 @@ async function loadNotificationRuntimeModule(): Promise<NotificationRuntimeModul
 async function loadAppStateAdapter(): Promise<AppStateAdapter> {
 	const { AppState } = await import("react-native")
 	return AppState
-}
-
-function isRecord(value: unknown): value is Record<string, unknown> {
-	return typeof value === "object" && value !== null
 }

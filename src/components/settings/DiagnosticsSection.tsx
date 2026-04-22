@@ -3,6 +3,7 @@ import { useAtomValue } from "jotai"
 import { useState } from "react"
 import { Pressable, Text, View } from "react-native"
 
+import { formatReconciliationStatus, formatRepeaterCount } from "@/features/chime/diagnostics"
 import { diagnosticsAtom } from "@/storage/persist"
 import { formatPermissionStatus } from "./diagnosticsDisplay"
 
@@ -37,8 +38,8 @@ export function DiagnosticsSection() {
 					}
 				/>
 				<DiagnosticRow
-					label="Scheduled artifacts"
-					value={diagnostics.lastScheduledArtifactCount?.toString() ?? "—"}
+					label="Scheduled repeaters"
+					value={formatRepeaterCount(diagnostics.lastScheduledArtifactCount)}
 				/>
 
 				{diagnostics.lastError && (
@@ -59,8 +60,8 @@ export function DiagnosticsSection() {
 							className="border-b border-border/30 py-1.5 last:border-b-0"
 						>
 							<Text className="text-foreground text-xs">
-								{entry.status}
-								{entry.artifactCount != null ? ` · ${entry.artifactCount} artifacts` : ""}
+								{formatReconciliationStatus(entry.status)}
+								{entry.artifactCount != null ? ` · ${formatRepeaterCount(entry.artifactCount)}` : ""}
 							</Text>
 							<Text className="text-muted-foreground text-xs">
 								{new Date(entry.timestamp).toLocaleString()}
