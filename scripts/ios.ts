@@ -2,22 +2,24 @@
 
 import { execSync, spawnSync } from "child_process"
 
-let bootedDevices = ""
+import { parseConnectedPhysicalIosDevices } from "./iosDeviceTarget"
 
-try {
-	bootedDevices = execSync("xcrun simctl list devices booted", {
-		encoding: "utf8",
-		stdio: ["ignore", "pipe", "ignore"],
-	})
-} catch {
-	bootedDevices = ""
+const connectedDevices = getConnectedPhysicalIosDevices()
+
+if (connectedDevices.length === 0) {
+	console.error(
+		"No connected physical iOS devices found. `bun ios` is reserved for physical-device installs. Connect an iPhone or run `bun x expo run:ios` for Simulator work.",
+	)
+	process.exit(1)
 }
 
-const deviceIds = [...bootedDevices.matchAll(/\(([A-F0-9-]+)\) \(Booted\)/gi)]
-	.map((match) => match[1])
-	.filter((id): id is string => Boolean(id))
+if (connectedDevices.length > 1) {
+	console.log("Multiple connected physical iOS devices detected:")
+	for (const device of connectedDevices) {
+		console.log(`- ${device.name} (${device.identifier})`)
+	}
+	console.log("\nFalling back to Expo's interactive device picker.\n")
 
-if (deviceIds.length === 0) {
 	const result = spawnSync("expo", ["run:ios", "--device"], {
 		stdio: "inherit",
 		env: process.env,
@@ -25,14 +27,26 @@ if (deviceIds.length === 0) {
 	process.exit(result.status ?? 0)
 }
 
-for (const deviceId of deviceIds) {
-	console.log(`\nRunning for device: ${deviceId}\n`)
-	const result = spawnSync("expo", ["run:ios", "--device", deviceId], {
-		stdio: "inherit",
-		env: process.env,
-	})
+const device = connectedDevices[0]!
 
-	if ((result.status ?? 0) !== 0) {
-		process.exit(result.status ?? 1)
+console.log(`\nRunning for physical device: ${device.name} (${device.identifier})\n`)
+
+const result = spawnSync("expo", ["run:ios", "--device", device.identifier], {
+	stdio: "inherit",
+	env: process.env,
+})
+
+process.exit(result.status ?? 0)
+
+function getConnectedPhysicalIosDevices() {
+	try {
+		const xcdeviceList = execSync("xcrun xcdevice list", {
+			encoding: "utf8",
+			stdio: ["ignore", "pipe", "ignore"],
+		})
+
+		return parseConnectedPhysicalIosDevices(xcdeviceList)
+	} catch {
+		return []
 	}
 }

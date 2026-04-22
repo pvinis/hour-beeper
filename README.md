@@ -47,6 +47,12 @@ To run directly on a physical iOS device:
 bun ios
 ```
 
+For Simulator-only work:
+
+```sh
+bun x expo run:ios
+```
+
 > **Note:** Both delivery modes require physical-device testing. Simulator-only validation is insufficient for notification delivery, AlarmKit authorization, custom sound playback, and reboot/relaunch behavior.
 
 ## Project Structure

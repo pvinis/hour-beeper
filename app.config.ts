@@ -52,6 +52,13 @@ const configs: Record<AppVariant, VariantConfig> = {
 	production: appConfigProduction,
 }
 
+const notificationSounds = [
+	"./assets/sounds/casio-beep.wav",
+	"./assets/sounds/classic-beep.wav",
+	"./assets/sounds/soft-beep.wav",
+	"./assets/sounds/digital-beep.wav",
+]
+
 const isAppVariant = (value: string): value is AppVariant => value in configs
 const envVariant = process.env.APP_VARIANT ?? "development"
 const appVariant: AppVariant = isAppVariant(envVariant) ? envVariant : "development"
@@ -79,16 +86,12 @@ export default (): ExpoConfig => ({
 		"expo-router",
 		"expo-sqlite",
 		[
-			"expo-notifications",
+			"./plugins/withNotificationSoundsOnly",
 			{
-				sounds: [
-					"./assets/sounds/casio-beep.wav",
-					"./assets/sounds/classic-beep.wav",
-					"./assets/sounds/soft-beep.wav",
-					"./assets/sounds/digital-beep.wav",
-				],
+				sounds: notificationSounds,
 			},
 		],
+		"./plugins/withLocalNotificationsOnly",
 		["expo-dev-client", { launchMode: "most-recent" }],
 	],
 	experiments: {
