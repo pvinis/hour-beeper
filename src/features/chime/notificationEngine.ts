@@ -122,7 +122,7 @@ export function buildNotificationRequests(
 		count?: number
 	} = {},
 ): HourBeeperNotificationRequest[] {
-	if (!settings.enabled || settings.deliveryMode !== "notification") {
+	if (!settings.enabled) {
 		return []
 	}
 
@@ -166,7 +166,7 @@ export async function reconcileNotificationSchedule(
 		: await getNotificationPermissionState(client)
 	const existing = (await client.getAllScheduledNotificationsAsync()).filter(isHourBeeperNotification)
 
-	if (settings.deliveryMode !== "notification" || !settings.enabled) {
+	if (!settings.enabled) {
 		const canceledIds = await cancelNotifications(client, existing)
 
 		return {

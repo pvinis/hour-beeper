@@ -1,11 +1,6 @@
 import { DateTime } from "luxon"
 
 import {
-	reconcileAlarmKitSchedule,
-	type AlarmKitClient,
-	type AlarmKitReconciliationResult,
-} from "./alarmkitEngine"
-import {
 	reconcileNotificationSchedule,
 	type NotificationClient,
 	type NotificationReconciliationResult,
@@ -21,7 +16,6 @@ export interface SchedulerSnapshot {
 
 export interface SchedulerDependencies {
 	notificationClient?: NotificationClient
-	alarmkitClient?: AlarmKitClient
 }
 
 export function createSchedulerSnapshot(
@@ -42,11 +36,6 @@ export function createSchedulerSnapshot(
 	}
 }
 
-export interface SchedulerReconciliationResult {
-	notification: NotificationReconciliationResult | null
-	alarmkit: AlarmKitReconciliationResult | null
-}
-
 export async function reconcileChimeSchedule(
 	settings: ChimeSettings,
 	dependencies: SchedulerDependencies,
@@ -55,22 +44,12 @@ export async function reconcileChimeSchedule(
 		count?: number
 		requestPermissionsIfNeeded?: boolean
 	} = {},
-): Promise<SchedulerReconciliationResult | null> {
-	const notification = dependencies.notificationClient
-		? await reconcileNotificationSchedule(dependencies.notificationClient, settings, options)
-		: null
-	const alarmkit = dependencies.alarmkitClient
-		? await reconcileAlarmKitSchedule(dependencies.alarmkitClient, settings, options)
-		: null
-
-	if (!notification && !alarmkit) {
+): Promise<NotificationReconciliationResult | null> {
+	if (!dependencies.notificationClient) {
 		return null
 	}
 
-	return {
-		notification,
-		alarmkit,
-	}
+	return reconcileNotificationSchedule(dependencies.notificationClient, settings, options)
 }
 
 export function getNextScheduledOccurrence(

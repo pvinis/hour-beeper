@@ -1,9 +1,10 @@
-import { diagnosticsAtom } from "@/storage/persist"
-import { formatPermissionStatus } from "./diagnosticsDisplay"
+import Constants from "expo-constants"
 import { useAtomValue } from "jotai"
 import { useState } from "react"
 import { Pressable, Text, View } from "react-native"
-import Constants from "expo-constants"
+
+import { diagnosticsAtom } from "@/storage/persist"
+import { formatPermissionStatus } from "./diagnosticsDisplay"
 
 export function DiagnosticsSection() {
 	const diagnostics = useAtomValue(diagnosticsAtom)
@@ -23,14 +24,9 @@ export function DiagnosticsSection() {
 
 			<View className="bg-card rounded-2xl px-4 py-3">
 				<DiagnosticRow label="Version" value={`${appVersion} (${gitCommit})`} />
-				<DiagnosticRow label="Active mode" value={diagnostics.activeMode} />
 				<DiagnosticRow
 					label="Notification permission"
 					value={formatPermissionStatus(diagnostics.notificationPermission)}
-				/>
-				<DiagnosticRow
-					label="AlarmKit permission"
-					value={formatPermissionStatus(diagnostics.alarmkitPermission)}
 				/>
 				<DiagnosticRow
 					label="Last reconciled"
@@ -63,7 +59,7 @@ export function DiagnosticsSection() {
 							className="border-b border-border/30 py-1.5 last:border-b-0"
 						>
 							<Text className="text-foreground text-xs">
-								{entry.mode} · {entry.status}
+								{entry.status}
 								{entry.artifactCount != null ? ` · ${entry.artifactCount} artifacts` : ""}
 							</Text>
 							<Text className="text-muted-foreground text-xs">

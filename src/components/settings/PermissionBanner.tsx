@@ -5,21 +5,12 @@ import { Linking, Pressable, Text, View } from "react-native"
 
 interface PermissionBannerProps {
 	notificationStatus: ChimePermissionStatus
-	alarmkitStatus: ChimePermissionStatus
-	deliveryMode: "notification" | "alarmkit"
 	onRequestPermission?: () => void
 }
 
-export function PermissionBanner({
-	notificationStatus,
-	alarmkitStatus,
-	deliveryMode,
-	onRequestPermission,
-}: PermissionBannerProps) {
+export function PermissionBanner({ notificationStatus, onRequestPermission }: PermissionBannerProps) {
 	const banner = getPermissionBannerContent({
 		notificationStatus,
-		alarmkitStatus,
-		deliveryMode,
 	})
 
 	if (!banner) {

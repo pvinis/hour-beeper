@@ -112,8 +112,6 @@ export default (): ExpoConfig => ({
 		icon: appConfig.ios.icon,
 		infoPlist: {
 			ITSAppUsesNonExemptEncryption: false,
-			NSAlarmKitUsageDescription:
-				"Hour Beeper uses AlarmKit to schedule reliable chimes even when the app is closed.",
 		},
 	},
 	extra: {

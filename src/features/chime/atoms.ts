@@ -2,7 +2,7 @@ import { atom } from "jotai"
 
 import { chimeSettingsAtom as persistedChimeSettingsAtom } from "@/storage/persist"
 import { createSchedulerSnapshot } from "./scheduler"
-import type { ChimeSchedule, ChimeSettings, ChimeSound, DeliveryMode } from "./types"
+import type { ChimeSchedule, ChimeSettings, ChimeSound } from "./types"
 
 export const chimeSettingsAtom = persistedChimeSettingsAtom
 
@@ -32,16 +32,6 @@ export const chimeSoundAtom = atom(
 		set(chimeSettingsAtom, {
 			...get(chimeSettingsAtom),
 			sound,
-		})
-	},
-)
-
-export const deliveryModeAtom = atom(
-	(get) => get(chimeSettingsAtom).deliveryMode,
-	(get, set, deliveryMode: DeliveryMode) => {
-		set(chimeSettingsAtom, {
-			...get(chimeSettingsAtom),
-			deliveryMode,
 		})
 	},
 )

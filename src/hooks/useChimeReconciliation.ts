@@ -1,15 +1,14 @@
 import { chimeSettingsAtom } from "@/features/chime/atoms"
 import { recordReconciliation } from "@/features/chime/diagnostics"
-import { diagnosticsAtom } from "@/storage/persist"
 import { createExpoNotificationClient } from "@/features/chime/notificationEngine"
 import { reconcileChimeSchedule, type SchedulerDependencies } from "@/features/chime/scheduler"
 import type { ChimePermissionStatus, ChimeSettings } from "@/features/chime/types"
+import { diagnosticsAtom } from "@/storage/persist"
 import { useAtomValue, useSetAtom } from "jotai"
 import { useCallback, useEffect, useRef, useState } from "react"
 
 interface ReconciliationState {
 	notificationPermission: ChimePermissionStatus
-	alarmkitPermission: ChimePermissionStatus
 	isReconciling: boolean
 	lastReconciledAt: string | null
 }
@@ -19,7 +18,6 @@ export function useChimeReconciliation() {
 	const setDiagnostics = useSetAtom(diagnosticsAtom)
 	const [state, setState] = useState<ReconciliationState>({
 		notificationPermission: "unknown",
-		alarmkitPermission: "unknown",
 		isReconciling: false,
 		lastReconciledAt: null,
 	})
@@ -43,25 +41,20 @@ export function useChimeReconciliation() {
 					return
 				}
 
-				const notifPerm = result?.notification?.permission.status
-				const akPerm = result?.alarmkit?.permission.status
-				const activeResult = currentSettings.deliveryMode === "alarmkit" ? result?.alarmkit : result?.notification
+				const notificationPermission = result?.permission.status
 
 				setState((prev) => ({
 					...prev,
 					isReconciling: false,
 					lastReconciledAt: new Date().toISOString(),
-					notificationPermission: notifPerm ?? prev.notificationPermission,
-					alarmkitPermission: akPerm ?? prev.alarmkitPermission,
+					notificationPermission: notificationPermission ?? prev.notificationPermission,
 				}))
 
 				setDiagnostics((prev) =>
 					recordReconciliation(prev, {
-						mode: currentSettings.deliveryMode,
-						status: activeResult?.status ?? "no-op",
-						artifactCount: activeResult?.requestCount ?? null,
-						notificationPermission: notifPerm,
-						alarmkitPermission: akPerm,
+						status: result?.status ?? "no-op",
+						artifactCount: result?.requestCount ?? null,
+						notificationPermission,
 					}),
 				)
 			} catch (error) {
@@ -94,21 +87,6 @@ export function useChimeReconciliation() {
 		try {
 			const notificationClient = await createExpoNotificationClient()
 			depsRef.current = { notificationClient }
-
-			try {
-				const { createExpoAlarmKitClient } = await import("@/features/chime/alarmkitEngine")
-				const alarmkitClient = await createExpoAlarmKitClient()
-				if (alarmkitClient) {
-					depsRef.current.alarmkitClient = alarmkitClient
-				} else if (mountedRef.current) {
-					setState((prev) => ({ ...prev, alarmkitPermission: "unavailable" }))
-				}
-			} catch {
-				if (mountedRef.current) {
-					setState((prev) => ({ ...prev, alarmkitPermission: "unavailable" }))
-				}
-			}
-
 			await reconcile(settings, false)
 		} catch (error) {
 			console.warn("[useChimeReconciliation] Failed to initialize:", error)

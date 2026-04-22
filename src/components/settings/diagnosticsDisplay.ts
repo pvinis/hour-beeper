@@ -10,5 +10,7 @@ export function formatPermissionStatus(status: ChimePermissionStatus) {
 			return "unavailable on this device"
 		case "unknown":
 			return "not requested yet"
+		default:
+			return status satisfies never
 	}
 }

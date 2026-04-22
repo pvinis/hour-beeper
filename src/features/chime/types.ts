@@ -1,7 +1,6 @@
 import type { DateTime } from "luxon"
 
 export const CHIME_SOUND_IDS = ["casio", "classic", "soft", "digital"] as const
-export const DELIVERY_MODES = ["notification", "alarmkit"] as const
 export const PRESET_SCHEDULE_IDS = [
 	"every-minute",
 	"every-30-minutes",
@@ -11,7 +10,6 @@ export const PRESET_SCHEDULE_IDS = [
 ] as const
 
 export type ChimeSound = (typeof CHIME_SOUND_IDS)[number]
-export type DeliveryMode = (typeof DELIVERY_MODES)[number]
 export type PresetScheduleId = (typeof PRESET_SCHEDULE_IDS)[number]
 
 export type ChimePermissionStatus = "unknown" | "granted" | "denied" | "unavailable"
@@ -35,12 +33,6 @@ export interface ChimeSettings {
 	enabled: boolean
 	schedule: ChimeSchedule
 	sound: ChimeSound
-	deliveryMode: DeliveryMode
-}
-
-export interface ChimePermissionState {
-	notifications: ChimePermissionStatus
-	alarmkit: ChimePermissionStatus
 }
 
 export interface ChimeDiagnosticsSnapshot {

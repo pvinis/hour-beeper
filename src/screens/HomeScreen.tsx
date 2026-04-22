@@ -1,5 +1,4 @@
 import { Screen } from "@/components/Screen"
-import { DeliveryModeSection } from "@/components/settings/DeliveryModeSection"
 import { DiagnosticsSection } from "@/components/settings/DiagnosticsSection"
 import { PermissionBanner } from "@/components/settings/PermissionBanner"
 import { ScheduleSection } from "@/components/settings/ScheduleSection"
@@ -12,12 +11,7 @@ import { ScrollView, Switch, Text, View } from "react-native"
 export function HomeScreen() {
 	const [enabled, setEnabled] = useAtom(chimeEnabledAtom)
 	const settings = useAtomValue(chimeSettingsAtom)
-	const {
-		notificationPermission,
-		alarmkitPermission,
-		isReconciling,
-		requestPermissions,
-	} = useChimeReconciliation()
+	const { notificationPermission, isReconciling, requestPermissions } = useChimeReconciliation()
 
 	return (
 		<Screen safe>
@@ -38,11 +32,7 @@ export function HomeScreen() {
 						<Text className="text-foreground text-base font-medium">
 							Chimes {enabled ? "On" : "Off"}
 						</Text>
-						<StatusSummary
-							enabled={enabled}
-							settings={settings}
-							isReconciling={isReconciling}
-						/>
+						<StatusSummary enabled={enabled} settings={settings} isReconciling={isReconciling} />
 					</View>
 					<Switch
 						value={enabled}
@@ -58,8 +48,6 @@ export function HomeScreen() {
 
 				<PermissionBanner
 					notificationStatus={notificationPermission}
-					alarmkitStatus={alarmkitPermission}
-					deliveryMode={settings.deliveryMode}
 					onRequestPermission={() => {
 						void requestPermissions()
 					}}
@@ -69,25 +57,13 @@ export function HomeScreen() {
 					<>
 						<ScheduleSection />
 						<SoundSection />
-						<DeliveryModeSection
-							onModeSelected={(mode) => {
-								if (!enabled || mode === settings.deliveryMode) {
-									return
-								}
-
-								void requestPermissions({
-									...settings,
-									deliveryMode: mode,
-								})
-							}}
-						/>
 					</>
 				)}
 
 				{!enabled && (
 					<View className="items-center py-12">
 						<Text className="text-muted-foreground text-center text-base leading-6">
-							Enable chimes to configure your schedule, sound, and delivery mode.
+							Enable chimes to configure your schedule and sound.
 						</Text>
 					</View>
 				)}
@@ -104,15 +80,11 @@ function StatusSummary({
 	isReconciling,
 }: {
 	enabled: boolean
-	settings: { schedule: { kind: string; preset?: string }; sound: string; deliveryMode: string }
+	settings: { schedule: { kind: string; preset?: string }; sound: string }
 	isReconciling: boolean
 }) {
 	if (!enabled) {
-		return (
-			<Text className="text-muted-foreground text-xs">
-				No chimes scheduled.
-			</Text>
-		)
+		return <Text className="text-muted-foreground text-xs">No chimes scheduled.</Text>
 	}
 
 	const scheduleLabel =
@@ -122,7 +94,7 @@ function StatusSummary({
 
 	return (
 		<Text className="text-muted-foreground text-xs">
-			{scheduleLabel} · {settings.sound} · {settings.deliveryMode}
+			{scheduleLabel} · {settings.sound}
 			{isReconciling ? " · syncing…" : ""}
 		</Text>
 	)

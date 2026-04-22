@@ -7,7 +7,6 @@ import {
 	materializeUpcomingOccurrences,
 	sanitizeChimeSettings,
 } from "./schedule"
-import type { ChimeSettings } from "./types"
 
 describe("materializeUpcomingOccurrences", () => {
 	it("materializes hourly preset windows anchored to the local clock", () => {
@@ -122,24 +121,23 @@ describe("sanitizeChimeSettings", () => {
 		})
 
 		expect(sanitized.schedule).toEqual({ kind: "preset", preset: "every-minute" })
+		expect(sanitized.sound).toBe("digital")
+		expect(sanitized.enabled).toBe(true)
 	})
 
-	it("preserves schedule and sound choices when switching delivery mode", () => {
-		const baseSettings: ChimeSettings = {
+	it("preserves schedule and sound choices when loading legacy AlarmKit-backed settings", () => {
+		const schedule = createCustomHoursSchedule([11, 16])
+		const sanitized = sanitizeChimeSettings({
 			enabled: true,
-			schedule: createCustomHoursSchedule([11, 16]),
+			schedule,
 			sound: "digital",
-			deliveryMode: "notification",
-		}
-
-		const switched = sanitizeChimeSettings({
-			...baseSettings,
 			deliveryMode: "alarmkit",
 		})
 
-		expect(switched.schedule).toEqual(baseSettings.schedule)
-		expect(switched.sound).toBe(baseSettings.sound)
-		expect(switched.enabled).toBe(true)
-		expect(switched.deliveryMode).toBe("alarmkit")
+		expect(sanitized).toEqual({
+			enabled: true,
+			schedule,
+			sound: "digital",
+		})
 	})
 })
