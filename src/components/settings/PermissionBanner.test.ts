@@ -3,42 +3,23 @@ import { describe, expect, it } from "vitest"
 import { getPermissionBannerContent } from "./permissionBannerModel"
 
 describe("getPermissionBannerContent", () => {
-	it("surfaces a request CTA when the active delivery mode still needs permission", () => {
+	it("surfaces a request CTA when notification permission is still unknown", () => {
 		const banner = getPermissionBannerContent({
-			notificationStatus: "granted",
-			alarmkitStatus: "unknown",
-			deliveryMode: "alarmkit",
+			notificationStatus: "unknown",
 		})
 
 		expect(banner).toEqual({
 			tone: "warning",
-			title: "AlarmKit permission required",
-			message: "Allow AlarmKit permission to let Hour Beeper schedule chimes in this mode.",
+			title: "Notification permission required",
+			message: "Allow notifications so Hour Beeper can schedule chimes.",
 			action: "request",
-			actionLabel: "Allow AlarmKit",
-		})
-	})
-
-	it("prioritizes unavailable state for AlarmKit devices that do not support it", () => {
-		const banner = getPermissionBannerContent({
-			notificationStatus: "granted",
-			alarmkitStatus: "unavailable",
-			deliveryMode: "alarmkit",
-		})
-
-		expect(banner).toEqual({
-			tone: "warning",
-			title: "AlarmKit unavailable",
-			message: "AlarmKit requires iOS 26 or later. Notification mode is still available.",
-			action: null,
+			actionLabel: "Allow Notifications",
 		})
 	})
 
 	it("keeps denied permissions pointed at Settings", () => {
 		const banner = getPermissionBannerContent({
 			notificationStatus: "denied",
-			alarmkitStatus: "granted",
-			deliveryMode: "notification",
 		})
 
 		expect(banner).toEqual({
@@ -48,5 +29,13 @@ describe("getPermissionBannerContent", () => {
 			action: "settings",
 			actionLabel: "Open Settings",
 		})
+	})
+
+	it("returns no banner when notification permission is already granted", () => {
+		const banner = getPermissionBannerContent({
+			notificationStatus: "granted",
+		})
+
+		expect(banner).toBeNull()
 	})
 })

@@ -7,18 +7,16 @@ import type {
 	MaterializedChimeOccurrence,
 	PresetScheduleId,
 } from "./types"
-import { CHIME_SOUND_IDS, DELIVERY_MODES, PRESET_SCHEDULE_IDS } from "./types"
+import { CHIME_SOUND_IDS, PRESET_SCHEDULE_IDS } from "./types"
 
 const DEFAULT_OCCURRENCE_COUNT = 24
 const PRESET_SCHEDULE_ID_SET = new Set<string>(PRESET_SCHEDULE_IDS)
-const DELIVERY_MODE_SET = new Set<string>(DELIVERY_MODES)
 const CHIME_SOUND_ID_SET = new Set<string>(CHIME_SOUND_IDS)
 
 export const DEFAULT_CHIME_SETTINGS: ChimeSettings = {
 	enabled: false,
 	schedule: { kind: "preset", preset: "hourly" },
 	sound: "casio",
-	deliveryMode: "notification",
 }
 
 export function createCustomHoursSchedule(hours: number[]): ChimeSchedule {
@@ -87,9 +85,6 @@ export function sanitizeChimeSettings(value: unknown): ChimeSettings {
 		enabled: typeof value.enabled === "boolean" ? value.enabled : DEFAULT_CHIME_SETTINGS.enabled,
 		schedule: sanitizeSchedule(value.schedule),
 		sound: isChimeSound(value.sound) ? value.sound : DEFAULT_CHIME_SETTINGS.sound,
-		deliveryMode: isDeliveryMode(value.deliveryMode)
-			? value.deliveryMode
-			: DEFAULT_CHIME_SETTINGS.deliveryMode,
 	}
 }
 
@@ -249,9 +244,6 @@ function isPresetScheduleId(value: unknown): value is PresetScheduleId {
 	return typeof value === "string" && PRESET_SCHEDULE_ID_SET.has(value)
 }
 
-function isDeliveryMode(value: unknown): value is ChimeSettings["deliveryMode"] {
-	return typeof value === "string" && DELIVERY_MODE_SET.has(value)
-}
 
 function isChimeSound(value: unknown): value is ChimeSettings["sound"] {
 	return typeof value === "string" && CHIME_SOUND_ID_SET.has(value)

@@ -21,7 +21,6 @@ describe("buildNotificationRequests", () => {
 		const settings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
-			deliveryMode: "notification" as const,
 			sound: "soft" as const,
 		}
 
@@ -62,7 +61,6 @@ describe("dismissPresentedNotificationIfOwned", () => {
 		const settings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
-			deliveryMode: "notification" as const,
 		}
 		const presented = toScheduledRecords(buildNotificationRequests(settings, { from, count: 1 }))
 		const fakeClient = createFakeClient({
@@ -101,7 +99,6 @@ describe("dismissPreviousPresentedHourBeeperNotification", () => {
 		const settings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
-			deliveryMode: "notification" as const,
 		}
 		const presented = toScheduledRecords(buildNotificationRequests(settings, { from, count: 3 }))
 		const fakeClient = createFakeClient({
@@ -121,7 +118,6 @@ describe("dismissPresentedHourBeeperNotifications", () => {
 		const settings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
-			deliveryMode: "notification" as const,
 		}
 		const presented = toScheduledRecords(buildNotificationRequests(settings, { from, count: 2 }))
 		const foreignNotification = {
@@ -148,7 +144,6 @@ describe("configureNotificationRuntime", () => {
 		const settings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
-			deliveryMode: "notification" as const,
 		}
 		const presented = toScheduledRecords(buildNotificationRequests(settings, { from, count: 3 }))
 		const fakeClient = createFakeClient({
@@ -228,13 +223,11 @@ describe("reconcileNotificationSchedule", () => {
 		const existingSettings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
-			deliveryMode: "notification" as const,
 			sound: "classic" as const,
 		}
 		const nextSettings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
-			deliveryMode: "notification" as const,
 			schedule: createCustomHoursSchedule([11, 16]),
 			sound: "digital" as const,
 		}
@@ -262,7 +255,6 @@ describe("reconcileNotificationSchedule", () => {
 		const settings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
-			deliveryMode: "notification" as const,
 		}
 		const existing = toScheduledRecords(buildNotificationRequests(settings, { from, count: 2 }))
 		const fakeClient = createFakeClient({
@@ -281,7 +273,6 @@ describe("reconcileNotificationSchedule", () => {
 		const enabledSettings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
-			deliveryMode: "notification" as const,
 		}
 		const existing = toScheduledRecords(buildNotificationRequests(enabledSettings, { from, count: 2 }))
 		const fakeClient = createFakeClient({
@@ -304,7 +295,6 @@ describe("reconcileNotificationSchedule", () => {
 		const settings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
-			deliveryMode: "notification" as const,
 		}
 		const fakeClient = createFakeClient({
 			permissions: { granted: false, status: "denied", canAskAgain: false },
@@ -314,29 +304,6 @@ describe("reconcileNotificationSchedule", () => {
 
 		expect(result.status).toBe("blocked")
 		expect(result.permission.status).toBe("denied")
-		expect(fakeClient.scheduled).toEqual([])
-	})
-
-	it("tears down notification artifacts when switching away from notification mode", async () => {
-		const notificationSettings = {
-			...DEFAULT_CHIME_SETTINGS,
-			enabled: true,
-			deliveryMode: "notification" as const,
-		}
-		const existing = toScheduledRecords(buildNotificationRequests(notificationSettings, { from, count: 2 }))
-		const fakeClient = createFakeClient({
-			permissions: grantedPermissions,
-			existing,
-		})
-
-		const result = await reconcileNotificationSchedule(
-			fakeClient,
-			{ ...notificationSettings, deliveryMode: "alarmkit" },
-			{ from, count: 2 },
-		)
-
-		expect(result.status).toBe("cleared")
-		expect(result.canceledIds).toEqual(existing.map((request) => request.identifier))
 		expect(fakeClient.scheduled).toEqual([])
 	})
 })

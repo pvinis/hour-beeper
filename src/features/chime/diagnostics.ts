@@ -1,12 +1,7 @@
-import type {
-	ChimePermissionStatus,
-	DeliveryMode,
-} from "./types"
+import type { ChimePermissionStatus } from "./types"
 
 export interface DiagnosticsState {
-	activeMode: DeliveryMode
 	notificationPermission: ChimePermissionStatus
-	alarmkitPermission: ChimePermissionStatus
 	lastReconciledAt: string | null
 	lastScheduledArtifactCount: number | null
 	lastError: string | null
@@ -15,7 +10,6 @@ export interface DiagnosticsState {
 
 export interface DiagnosticsHistoryEntry {
 	timestamp: string
-	mode: DeliveryMode
 	status: string
 	artifactCount: number | null
 }
@@ -23,39 +17,31 @@ export interface DiagnosticsHistoryEntry {
 const MAX_HISTORY_ENTRIES = 50
 
 export const DEFAULT_DIAGNOSTICS_STATE: DiagnosticsState = {
-	activeMode: "notification",
 	notificationPermission: "unknown",
-	alarmkitPermission: "unknown",
 	lastReconciledAt: null,
 	lastScheduledArtifactCount: null,
 	lastError: null,
 	history: [],
 }
 
-
 export function recordReconciliation(
 	prev: DiagnosticsState,
 	update: {
-		mode: DeliveryMode
 		status: string
 		artifactCount: number | null
 		notificationPermission?: ChimePermissionStatus
-		alarmkitPermission?: ChimePermissionStatus
 		error?: string | null
 	},
 ): DiagnosticsState {
 	const timestamp = new Date().toISOString()
 	const entry: DiagnosticsHistoryEntry = {
 		timestamp,
-		mode: update.mode,
 		status: update.status,
 		artifactCount: update.artifactCount,
 	}
 
 	return {
-		activeMode: update.mode,
 		notificationPermission: update.notificationPermission ?? prev.notificationPermission,
-		alarmkitPermission: update.alarmkitPermission ?? prev.alarmkitPermission,
 		lastReconciledAt: timestamp,
 		lastScheduledArtifactCount: update.artifactCount,
 		lastError: update.error ?? null,
@@ -69,16 +55,9 @@ export function sanitizeDiagnostics(value: unknown): DiagnosticsState {
 	}
 
 	return {
-		activeMode:
-			value.activeMode === "notification" || value.activeMode === "alarmkit"
-				? value.activeMode
-				: DEFAULT_DIAGNOSTICS_STATE.activeMode,
 		notificationPermission: isPermissionStatus(value.notificationPermission)
 			? value.notificationPermission
 			: DEFAULT_DIAGNOSTICS_STATE.notificationPermission,
-		alarmkitPermission: isPermissionStatus(value.alarmkitPermission)
-			? value.alarmkitPermission
-			: DEFAULT_DIAGNOSTICS_STATE.alarmkitPermission,
 		lastReconciledAt:
 			typeof value.lastReconciledAt === "string"
 				? value.lastReconciledAt
@@ -92,18 +71,28 @@ export function sanitizeDiagnostics(value: unknown): DiagnosticsState {
 				? value.lastError
 				: DEFAULT_DIAGNOSTICS_STATE.lastError,
 		history: Array.isArray(value.history)
-			? value.history.filter(isDiagnosticsEntry).slice(0, MAX_HISTORY_ENTRIES)
+			? value.history
+					.map(sanitizeDiagnosticsEntry)
+					.filter((entry): entry is DiagnosticsHistoryEntry => entry !== null)
+					.slice(0, MAX_HISTORY_ENTRIES)
 			: [],
 	}
 }
 
-function isDiagnosticsEntry(value: unknown): value is DiagnosticsHistoryEntry {
-	return (
-		isRecord(value) &&
-		typeof value.timestamp === "string" &&
-		typeof value.mode === "string" &&
-		typeof value.status === "string"
-	)
+function sanitizeDiagnosticsEntry(value: unknown): DiagnosticsHistoryEntry | null {
+	if (!isRecord(value) || typeof value.timestamp !== "string" || typeof value.status !== "string") {
+		return null
+	}
+
+	if ("mode" in value && value.mode !== undefined && value.mode !== "notification") {
+		return null
+	}
+
+	return {
+		timestamp: value.timestamp,
+		status: value.status,
+		artifactCount: typeof value.artifactCount === "number" ? value.artifactCount : null,
+	}
 }
 
 const PERMISSION_STATUSES = new Set(["unknown", "granted", "denied", "unavailable"])
