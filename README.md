@@ -12,10 +12,12 @@ Hour Beeper now ships with a single delivery path:
 
 ## Bundled Sounds
 
+Tap any bundled sound in the app to play a short foreground preview. Preview playback is UI feedback only; scheduled notification delivery still follows the notification path and should be validated on a physical device.
+
 - **Casio** (default) — Casio F-91W inspired chime
+- **Mid** — 1200 Hz digital beep
 - **Classic** — 880 Hz sine beep
-- **Soft** — 660 Hz gentle tone
-- **Digital** — 1200 Hz digital beep
+- **Low** — 660 Hz gentle tone
 
 ## Diagnostics
 
@@ -47,7 +49,7 @@ For Simulator-only work:
 bun x expo run:ios
 ```
 
-> **Note:** Physical-device testing is still required for repeating notification delivery, custom sound playback, Notification Center cleanup behavior, reboot/relaunch alignment, and timezone/DST/local-clock validation.
+> **Note:** Physical-device testing is still required for repeating notification delivery, custom sound playback, foreground sound preview behavior (including silent switch and volume observations), Notification Center cleanup behavior, reboot/relaunch alignment, and timezone/DST/local-clock validation.
 >
 > If you previously ran an older internal AlarmKit dogfood build, do a manual reset/uninstall before testing the current notification-only app.
 

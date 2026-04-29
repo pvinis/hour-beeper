@@ -1,6 +1,6 @@
 import type { DateTime } from "luxon"
 
-export const CHIME_SOUND_IDS = ["casio", "classic", "soft", "digital"] as const
+export const CHIME_SOUND_IDS = ["casio", "mid", "classic", "low"] as const
 export const PRESET_SCHEDULE_IDS = [
 	"every-minute",
 	"every-30-minutes",

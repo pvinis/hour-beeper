@@ -2,7 +2,12 @@
 
 
 
-## allow the user to pick a custom message if they pick less than 5 specific hours in the day.
+## Custom per-hour beeps
+
+- [ ] Finish the implementation plan from `docs/brainstorms/2026-04-23-custom-per-hour-beeps-requirements.md`.
+- [ ] Allow custom schedules with 5 or fewer selected hours to assign optional per-hour sound overrides.
+- [ ] Preserve saved hour-to-sound assignments when the schedule temporarily becomes ineligible with 6+ selected hours.
+- [ ] Expand the bundled sound library to at least 8 watch-like beep/chime sounds.
 
 ## Improve diagnostics
 
@@ -27,6 +32,7 @@
 
 ## Long-run validation matrix
 
+- [ ] Test foreground sound previews on a physical device, including repeated taps, rapid switching, silent switch, and volume behavior.
 - [ ] Test with DND / Focus enabled.
 - [ ] Test with silent switch enabled.
 - [ ] Test after device reboot.

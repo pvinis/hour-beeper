@@ -1,7 +1,7 @@
 ---
 title: fix: Replace notification batches with repeating slot schedules
 type: fix
-status: active
+status: completed
 date: 2026-04-23
 origin: docs/brainstorms/2026-04-16-hourly-chime-app-requirements.md
 deepened: 2026-04-23
@@ -14,6 +14,14 @@ deepened: 2026-04-23
 Replace notification mode’s current rolling batch of dated one-off requests with stable repeating requests keyed to logical schedule slots. The goal is to make notification scheduling match the user’s recurring intent, stay well below iOS pending-request limits, and make reconciliation/debugging easier to reason about.
 
 This plan chooses the TODO’s **Path A: repeater-per-slot** strategy for notification mode. It keeps notification scheduling purely local and app-driven — no background top-up dependency, no rolling 24-request replenishment loop, and no attempt to predict a long chain of future dated occurrences.
+
+## Execution Status
+
+- Completed: **Unit 1** — repeating notification requests from logical schedule slots
+- Completed: **Unit 2** — trigger-aware reconciliation and migration from one-off batches
+- Completed: **Unit 3** — delivered-notification cleanup adapted to stable repeater identities
+- Completed: **Unit 4** — diagnostics and docs updated for repeater counts
+- Current implementation state: all 4 units complete and merged in `2d29dec` / PR #3. Notification mode now schedules repeaters keyed by logical slots, and diagnostics report repeater counts rather than rolling one-off batch sizes.
 
 ## Problem Frame
 
@@ -121,7 +129,7 @@ Recent repo context sharpens the implementation need:
 
 ## Implementation Units
 
-- [ ] **Unit 1: Build repeating notification requests from logical schedule slots**
+- [x] **Unit 1: Build repeating notification requests from logical schedule slots**
 
 **Goal:** Replace the current dated-occurrence request builder with a deterministic repeater-per-slot builder that matches the stored schedule model.
 
@@ -162,7 +170,7 @@ Recent repo context sharpens the implementation need:
 - Stable logical-slot identifiers are visible in the planned request set.
 - The trigger shape for each schedule matches the intended recurring semantics.
 
-- [ ] **Unit 2: Make notification reconciliation trigger-aware and migrate old one-off batches safely**
+- [x] **Unit 2: Make notification reconciliation trigger-aware and migrate old one-off batches safely**
 
 **Goal:** Ensure rehydrate, settings changes, and app updates compare the desired repeater plan correctly and replace stale one-off batches without leaving duplicates behind.
 
@@ -204,7 +212,7 @@ Recent repo context sharpens the implementation need:
 - Subsequent reconciliations are idempotent when the repeater plan already matches.
 - A failed reschedule is observable and retryable rather than silently leaving a half-migrated pending set.
 
-- [ ] **Unit 3: Adapt delivered-notification cleanup to stable repeater identities**
+- [x] **Unit 3: Adapt delivered-notification cleanup to stable repeater identities**
 
 **Goal:** Preserve the existing grouped/latest cleanup posture even after notification scheduling stops encoding each future occurrence into the request identifier.
 
@@ -243,7 +251,7 @@ Recent repo context sharpens the implementation need:
 - Cleanup logic no longer assumes occurrence-specific identifiers or static future timestamps.
 - Notification mode still behaves like a grouped/latest best-effort stack rather than an unbounded clutter stream.
 
-- [ ] **Unit 4: Keep diagnostics and dogfooding evidence understandable after the repeater shift**
+- [x] **Unit 4: Keep diagnostics and dogfooding evidence understandable after the repeater shift**
 
 **Goal:** Ensure a dogfooder can tell from in-app diagnostics that notification mode is using repeaters and interpret the smaller pending-request counts correctly.
 
