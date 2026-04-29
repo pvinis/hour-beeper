@@ -84,7 +84,7 @@ export function sanitizeChimeSettings(value: unknown): ChimeSettings {
 	return {
 		enabled: typeof value.enabled === "boolean" ? value.enabled : DEFAULT_CHIME_SETTINGS.enabled,
 		schedule: sanitizeSchedule(value.schedule),
-		sound: isChimeSound(value.sound) ? value.sound : DEFAULT_CHIME_SETTINGS.sound,
+		sound: sanitizeChimeSound(value.sound),
 	}
 }
 
@@ -244,6 +244,18 @@ function isPresetScheduleId(value: unknown): value is PresetScheduleId {
 	return typeof value === "string" && PRESET_SCHEDULE_ID_SET.has(value)
 }
 
+
+function sanitizeChimeSound(value: unknown): ChimeSettings["sound"] {
+	if (value === "digital") {
+		return "mid"
+	}
+
+	if (value === "soft") {
+		return "low"
+	}
+
+	return isChimeSound(value) ? value : DEFAULT_CHIME_SETTINGS.sound
+}
 
 function isChimeSound(value: unknown): value is ChimeSettings["sound"] {
 	return typeof value === "string" && CHIME_SOUND_ID_SET.has(value)

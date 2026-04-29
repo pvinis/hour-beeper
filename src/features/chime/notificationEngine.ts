@@ -6,19 +6,13 @@ import {
 	type NotificationPermissionState,
 } from "./permissions"
 import { getScheduleTimes } from "./schedule"
+import { getNotificationSoundFilename } from "./sounds"
 import type { ChimeSettings, ChimeSound, LocalTime } from "./types"
 
 const NOTIFICATION_ID_PREFIX = "hour-beeper.notification"
 const NOTIFICATION_SOURCE = "hour-beeper"
 const NOTIFICATION_THREAD_IDENTIFIER = "hour-beeper.chimes"
 const REPEATING_INTERVAL_SECONDS = 60
-
-const SOUND_FILES: Record<ChimeSound, string> = {
-	casio: "casio-beep.wav",
-	classic: "classic-beep.wav",
-	soft: "soft-beep.wav",
-	digital: "digital-beep.wav",
-}
 
 export interface HourBeeperNotificationData extends Record<string, unknown> {
 	source: typeof NOTIFICATION_SOURCE
@@ -174,7 +168,7 @@ export function buildNotificationRequests(
 		content: {
 			title: "Hour Beeper",
 			body: slot.body,
-			sound: SOUND_FILES[settings.sound],
+			sound: getNotificationSoundFilename(settings.sound),
 			data: {
 				source: NOTIFICATION_SOURCE,
 				slotKey: slot.slotKey,

@@ -116,12 +116,12 @@ describe("sanitizeChimeSettings", () => {
 		const sanitized = sanitizeChimeSettings({
 			enabled: true,
 			schedule: { kind: "preset", preset: "every-5-minutes" },
-			sound: "digital",
+			sound: "mid",
 			deliveryMode: "notification",
 		})
 
 		expect(sanitized.schedule).toEqual({ kind: "preset", preset: "every-minute" })
-		expect(sanitized.sound).toBe("digital")
+		expect(sanitized.sound).toBe("mid")
 		expect(sanitized.enabled).toBe(true)
 	})
 
@@ -130,14 +130,19 @@ describe("sanitizeChimeSettings", () => {
 		const sanitized = sanitizeChimeSettings({
 			enabled: true,
 			schedule,
-			sound: "digital",
+			sound: "mid",
 			deliveryMode: "alarmkit",
 		})
 
 		expect(sanitized).toEqual({
 			enabled: true,
 			schedule,
-			sound: "digital",
+			sound: "mid",
 		})
+	})
+
+	it("migrates legacy sound ids to renamed sound ids", () => {
+		expect(sanitizeChimeSettings({ ...DEFAULT_CHIME_SETTINGS, sound: "digital" }).sound).toBe("mid")
+		expect(sanitizeChimeSettings({ ...DEFAULT_CHIME_SETTINGS, sound: "soft" }).sound).toBe("low")
 	})
 })
