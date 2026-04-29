@@ -13,6 +13,7 @@ import {
 	dismissPresentedHourBeeperNotifications,
 	dismissPresentedNotificationIfOwned,
 	reconcileNotificationSchedule,
+	toExpoTriggerInput,
 	type HourBeeperNotificationRequest,
 	type NotificationClient,
 	type PresentedNotificationRecord,
@@ -189,6 +190,31 @@ describe("buildNotificationRequests", () => {
 
 	it("returns no requests when chimes are disabled", () => {
 		expect(buildNotificationRequests(DEFAULT_CHIME_SETTINGS)).toEqual([])
+	})
+})
+
+describe("toExpoTriggerInput", () => {
+	it("omits undefined optional calendar fields when adapting minute-only repeaters", () => {
+		const Notifications = {
+			SchedulableTriggerInputTypes: {
+				CALENDAR: "calendar",
+				TIME_INTERVAL: "timeInterval",
+			},
+		} as typeof import("expo-notifications")
+		const request = buildNotificationRequests({
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+		})[0]!
+
+		const trigger = toExpoTriggerInput(Notifications, request.trigger)
+
+		expect(trigger).toEqual({
+			type: "calendar",
+			repeats: true,
+			minute: 0,
+		})
+		expect(trigger).not.toHaveProperty("hour")
+		expect(trigger).not.toHaveProperty("second")
 	})
 })
 

@@ -709,19 +709,29 @@ function normalizeTrigger(trigger: unknown): NotificationTriggerRecord | null {
 	}
 }
 
-function toExpoTriggerInput(
+export function toExpoTriggerInput(
 	Notifications: typeof import("expo-notifications"),
 	trigger: HourBeeperNotificationTrigger,
 ): import("expo-notifications").NotificationTriggerInput {
 	switch (trigger.type) {
-		case "calendar":
-			return {
+		case "calendar": {
+			const calendarTrigger: Record<string, unknown> = {
 				type: Notifications.SchedulableTriggerInputTypes.CALENDAR as import("expo-notifications").SchedulableTriggerInputTypes.CALENDAR,
 				repeats: trigger.repeats,
-				hour: trigger.hour,
-				minute: trigger.minute,
-				second: trigger.second,
 			}
+
+			if (trigger.hour !== undefined) {
+				calendarTrigger.hour = trigger.hour
+			}
+			if (trigger.minute !== undefined) {
+				calendarTrigger.minute = trigger.minute
+			}
+			if (trigger.second !== undefined) {
+				calendarTrigger.second = trigger.second
+			}
+
+			return calendarTrigger as import("expo-notifications").NotificationTriggerInput
+		}
 		case "timeInterval":
 			return {
 				type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL as import("expo-notifications").SchedulableTriggerInputTypes.TIME_INTERVAL,
