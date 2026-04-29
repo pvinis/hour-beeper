@@ -27,7 +27,7 @@ describe("buildNotificationRequests", () => {
 		const settings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
-			sound: "soft" as const,
+			sound: "low" as const,
 		}
 
 		const requests = buildNotificationRequests(settings)
@@ -47,7 +47,7 @@ describe("buildNotificationRequests", () => {
 						source: "hour-beeper",
 						slotKey: "minute:00",
 						triggerType: "calendar",
-						sound: "soft",
+						sound: "low",
 					}),
 				}),
 			},
@@ -161,27 +161,27 @@ describe("buildNotificationRequests", () => {
 	})
 
 	it("changing the selected sound changes the payload while leaving slot identity stable", () => {
-		const softRequests = buildNotificationRequests({
+		const lowRequests = buildNotificationRequests({
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
 			schedule: createCustomHoursSchedule([11, 16]),
-			sound: "soft",
+			sound: "low",
 		})
-		const digitalRequests = buildNotificationRequests({
+		const midRequests = buildNotificationRequests({
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
 			schedule: createCustomHoursSchedule([11, 16]),
-			sound: "digital",
+			sound: "mid",
 		})
 
-		expect(softRequests.map((request) => request.identifier)).toEqual(
-			digitalRequests.map((request) => request.identifier),
+		expect(lowRequests.map((request) => request.identifier)).toEqual(
+			midRequests.map((request) => request.identifier),
 		)
-		expect(softRequests.map((request) => request.content.sound)).toEqual([
+		expect(lowRequests.map((request) => request.content.sound)).toEqual([
 			"soft-beep.wav",
 			"soft-beep.wav",
 		])
-		expect(digitalRequests.map((request) => request.content.sound)).toEqual([
+		expect(midRequests.map((request) => request.content.sound)).toEqual([
 			"digital-beep.wav",
 			"digital-beep.wav",
 		])
@@ -218,7 +218,7 @@ describe("dismissPresentedNotificationIfOwned", () => {
 			identifier: "other-app.notification.2026-04-16T11:00:00.000Z",
 			content: {
 				sound: "soft-beep.wav",
-				data: { source: "other-app", sound: "soft" },
+				data: { source: "other-app", sound: "low" },
 			},
 			date: 100,
 		}
@@ -271,7 +271,7 @@ describe("dismissPresentedHourBeeperNotifications", () => {
 			identifier: "other-app.notification.2026-04-16T13:00:00.000Z",
 			content: {
 				sound: "digital-beep.wav",
-				data: { source: "other-app", sound: "digital" },
+				data: { source: "other-app", sound: "mid" },
 			},
 			date: 150,
 		}
@@ -414,7 +414,7 @@ describe("reconcileNotificationSchedule", () => {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
 			schedule: createCustomHoursSchedule([11, 16]),
-			sound: "digital" as const,
+			sound: "mid" as const,
 		}
 		const existing = toScheduledRecords(buildNotificationRequests(existingSettings))
 		const fakeClient = createFakeClient({
@@ -494,7 +494,7 @@ describe("reconcileNotificationSchedule", () => {
 			identifier: "other-app.notification.2026-04-16T11:00:00.000Z",
 			content: {
 				sound: "digital-beep.wav",
-				data: { source: "other-app", sound: "digital" },
+				data: { source: "other-app", sound: "mid" },
 			},
 			trigger: { type: "date", date: "2026-04-16T11:00:00.000Z" },
 		}

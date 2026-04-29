@@ -3,6 +3,7 @@ import "tsx/cjs"
 import { execSync } from "child_process"
 import type { ExpoConfig } from "@expo/config-types"
 import packageJson from "./package.json" with { type: "json" }
+import { NOTIFICATION_SOUND_PATHS } from "./src/features/chime/sounds"
 
 type AppVariant = "development" | "staging" | "production"
 
@@ -52,13 +53,6 @@ const configs: Record<AppVariant, VariantConfig> = {
 	production: appConfigProduction,
 }
 
-const notificationSounds = [
-	"./assets/sounds/casio-beep.wav",
-	"./assets/sounds/classic-beep.wav",
-	"./assets/sounds/soft-beep.wav",
-	"./assets/sounds/digital-beep.wav",
-]
-
 const isAppVariant = (value: string): value is AppVariant => value in configs
 const envVariant = process.env.APP_VARIANT ?? "development"
 const appVariant: AppVariant = isAppVariant(envVariant) ? envVariant : "development"
@@ -88,7 +82,7 @@ export default (): ExpoConfig => ({
 		[
 			"./plugins/withNotificationSoundsOnly",
 			{
-				sounds: notificationSounds,
+				sounds: NOTIFICATION_SOUND_PATHS,
 			},
 		],
 		"./plugins/withLocalNotificationsOnly",
