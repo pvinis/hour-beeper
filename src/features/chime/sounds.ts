@@ -7,10 +7,10 @@ interface ChimeSoundMetadata {
 }
 
 export const CHIME_SOUND_CATALOG = {
-	casio: {
-		id: "casio",
-		label: "Casio",
-		notificationFilename: "casio-beep.wav",
+	bellio: {
+		id: "bellio",
+		label: "Bellio",
+		notificationFilename: "bellio-beep.wav",
 	},
 	mid: {
 		id: "mid",

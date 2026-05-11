@@ -16,7 +16,7 @@ const CHIME_SOUND_ID_SET = new Set<string>(CHIME_SOUND_IDS)
 export const DEFAULT_CHIME_SETTINGS: ChimeSettings = {
 	enabled: false,
 	schedule: { kind: "preset", preset: "hourly" },
-	sound: "casio",
+	sound: "bellio",
 }
 
 export function createCustomHoursSchedule(hours: number[]): ChimeSchedule {
