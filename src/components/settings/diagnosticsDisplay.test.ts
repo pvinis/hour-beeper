@@ -12,6 +12,10 @@ describe("formatPermissionStatus", () => {
 		expect(formatPermissionStatus("denied")).toBe("denied")
 	})
 
+	it("clarifies blocked states as system settings limits", () => {
+		expect(formatPermissionStatus("blocked")).toBe("blocked in system settings")
+	})
+
 	it("clarifies unavailable states as device-level limits", () => {
 		expect(formatPermissionStatus("unavailable")).toBe("unavailable on this device")
 	})

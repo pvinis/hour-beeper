@@ -6,6 +6,8 @@ export function formatPermissionStatus(status: ChimePermissionStatus) {
 			return "granted"
 		case "denied":
 			return "denied"
+		case "blocked":
+			return "blocked in system settings"
 		case "unavailable":
 			return "unavailable on this device"
 		case "unknown":

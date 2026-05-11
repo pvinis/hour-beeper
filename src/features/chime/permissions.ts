@@ -4,6 +4,9 @@ export interface NotificationPermissionResponse {
 	granted?: boolean
 	status?: string
 	canAskAgain?: boolean
+	android?: {
+		importance?: number
+	}
 }
 
 export interface NotificationPermissionClient {
@@ -50,6 +53,10 @@ export async function openNotificationSettings() {
 function normalizeNotificationPermissionStatus(
 	response: NotificationPermissionResponse,
 ): ChimePermissionStatus {
+	if (response.android?.importance !== undefined && response.android.importance <= 2) {
+		return "blocked"
+	}
+
 	if (response.granted || response.status === "granted" || response.status === "provisional") {
 		return "granted"
 	}

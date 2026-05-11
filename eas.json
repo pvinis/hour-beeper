@@ -10,6 +10,9 @@
       "distribution": "internal",
       "environment": "development",
       "autoIncrement": true,
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "APP_VARIANT": "development"
       }
@@ -24,6 +27,9 @@
       "autoIncrement": true,
       "distribution": "internal",
       "environment": "preview",
+      "android": {
+        "buildType": "apk"
+      },
       "env": {
         "APP_VARIANT": "staging"
       }

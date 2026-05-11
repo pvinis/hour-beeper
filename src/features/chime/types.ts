@@ -12,7 +12,7 @@ export const PRESET_SCHEDULE_IDS = [
 export type ChimeSound = (typeof CHIME_SOUND_IDS)[number]
 export type PresetScheduleId = (typeof PRESET_SCHEDULE_IDS)[number]
 
-export type ChimePermissionStatus = "unknown" | "granted" | "denied" | "unavailable"
+export type ChimePermissionStatus = "unknown" | "granted" | "denied" | "blocked" | "unavailable"
 
 export interface LocalTime {
 	hour: number

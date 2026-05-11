@@ -1,6 +1,8 @@
 # Hour Bell
 
-A minimal iOS-first Expo app that emits a brief recurring bell at selected times — inspired by classic digital watch hourly chimes.
+A minimal Expo app that emits a brief recurring bell at selected times — inspired by classic digital watch hourly chimes.
+
+> Android support is implemented/configured, with release-readiness gated on the physical-device checklist in `docs/android-validation.md`.
 
 ## Delivery
 
@@ -8,7 +10,7 @@ Hour Bell now ships with a single delivery path:
 
 | Path | How it works | Tradeoff |
 | --- | --- | --- |
-| **Notifications** | Schedules slot-based repeating local notifications with a custom bundled sound. Works on all supported iOS versions. | Uses grouping and best-effort cleanup to keep the stack small, but terminated-app delivery may still leave visible artifacts. |
+| **Notifications** | Schedules slot-based repeating local notifications with a custom bundled sound. Works on supported iOS builds and Android builds after device validation. | Uses grouping and best-effort cleanup to keep the stack small, but terminated-app delivery may still leave visible artifacts. Android delivery also depends on notification permission, channel settings, and OEM battery behavior. |
 
 ## Bundled Sounds
 
@@ -49,6 +51,23 @@ For Simulator-only work:
 bun x expo run:ios
 ```
 
+To run Android locally:
+
+```sh
+bun android
+```
+
+Android EAS build helpers mirror the iOS scripts:
+
+```sh
+bun build:dev:android
+bun build:stag:android
+bun build:prod:android
+bun run:android
+```
+
+Play Store submission is intentionally not configured yet; validate Android behavior first with `docs/android-validation.md`.
+
 > **Note:** Physical-device testing is still required for repeating notification delivery, custom sound playback, foreground sound preview behavior (including silent switch and volume observations), Notification Center cleanup behavior, reboot/relaunch alignment, and timezone/DST/local-clock validation.
 >
 > If you previously ran an older internal AlarmKit dogfood build, do a manual reset/uninstall before testing the current notification-only app.
@@ -68,6 +87,7 @@ src/
 
 ## Planned Follow-ups
 
-- Android port once the iOS schedule and delivery model stabilizes
+- Complete Android physical-device validation before claiming release-ready support
+- Play Store / Android EAS submit setup after validation
 - iCloud or cross-device sync investigation
 - Brand identity work (app name, icon, copy polish)
