@@ -7,6 +7,7 @@ import {
 	materializeUpcomingOccurrences,
 } from "./schedule"
 import {
+	CHIME_NOTIFICATION_CATEGORY_IDENTIFIER,
 	buildNotificationRequests,
 	configureNotificationRuntime,
 	dismissPreviousPresentedHourBeeperNotification,
@@ -22,6 +23,7 @@ import {
 
 const from = DateTime.fromISO("2026-04-16T10:15:00", { zone: "UTC" })
 const grantedPermissions = { granted: true, status: "granted" as const, canAskAgain: true }
+const carPlayCategoryOptions = { allowInCarPlay: true }
 
 describe("buildNotificationRequests", () => {
 	it("builds one repeating calendar request for the hourly preset", () => {
@@ -44,6 +46,7 @@ describe("buildNotificationRequests", () => {
 				content: expect.objectContaining({
 					sound: "soft-beep.wav",
 					threadIdentifier: "hour-beeper.chimes",
+					categoryIdentifier: CHIME_NOTIFICATION_CATEGORY_IDENTIFIER,
 					data: expect.objectContaining({
 						source: "hour-beeper",
 						slotKey: "minute:00",
@@ -188,6 +191,18 @@ describe("buildNotificationRequests", () => {
 		])
 	})
 
+	it("can omit the CarPlay category for unsupported or degraded category registration", () => {
+		const requests = buildNotificationRequests(
+			{
+				...DEFAULT_CHIME_SETTINGS,
+				enabled: true,
+			},
+			{ includeCarPlayCategory: false },
+		)
+
+		expect(requests[0]?.content).not.toHaveProperty("categoryIdentifier")
+	})
+
 	it("returns no requests when chimes are disabled", () => {
 		expect(buildNotificationRequests(DEFAULT_CHIME_SETTINGS)).toEqual([])
 	})
@@ -253,7 +268,10 @@ describe("dismissPresentedNotificationIfOwned", () => {
 			presented: [foreignNotification],
 		})
 
-		const didDismiss = await dismissPresentedNotificationIfOwned(fakeClient, foreignNotification)
+		const didDismiss = await dismissPresentedNotificationIfOwned(
+			fakeClient,
+			foreignNotification,
+		)
 
 		expect(didDismiss).toBe(false)
 		expect(fakeClient.dismissedIds).toEqual([])
@@ -360,7 +378,11 @@ describe("configureNotificationRuntime", () => {
 				date: number
 				request: {
 					identifier: string
-					content: { sound?: string | boolean | null; data?: Record<string, unknown>; threadIdentifier?: string | null }
+					content: {
+						sound?: string | boolean | null
+						data?: Record<string, unknown>
+						threadIdentifier?: string | null
+					}
 					trigger?: unknown
 				}
 			}) => void
@@ -480,8 +502,103 @@ describe("reconcileNotificationSchedule", () => {
 		const result = await reconcileNotificationSchedule(fakeClient, settings)
 
 		expect(result.status).toBe("unchanged")
+		expect(result.carPlayEligibility).toBe("registered")
 		expect(result.canceledIds).toEqual([])
+		expect(fakeClient.categoryRegistrations).toEqual([carPlayCategoryOptions])
 		expect(fakeClient.scheduled).toEqual([])
+	})
+
+	it("requests alert, sound, no badge, and CarPlay display when explicitly enabling chimes", async () => {
+		const settings = {
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+		}
+		const fakeClient = createFakeClient({
+			permissions: grantedPermissions,
+		})
+
+		await reconcileNotificationSchedule(fakeClient, settings, {
+			requestPermissionsIfNeeded: true,
+		})
+
+		expect(fakeClient.permissionRequests).toEqual([
+			{
+				ios: {
+					allowAlert: true,
+					allowBadge: false,
+					allowSound: true,
+					allowDisplayInCarPlay: true,
+				},
+			},
+		])
+	})
+
+	it("migrates matching repeaters that are missing the CarPlay category", async () => {
+		const settings = {
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+		}
+		const existing = toScheduledRecords(
+			buildNotificationRequests(settings, { includeCarPlayCategory: false }),
+		)
+		const fakeClient = createFakeClient({
+			permissions: grantedPermissions,
+			existing,
+		})
+
+		const result = await reconcileNotificationSchedule(fakeClient, settings)
+
+		expect(result.status).toBe("migrated")
+		expect(result.carPlayEligibility).toBe("registered")
+		expect(result.canceledIds).toEqual(existing.map((record) => record.identifier))
+		expect(fakeClient.scheduled.map((request) => request.content.categoryIdentifier)).toEqual([
+			CHIME_NOTIFICATION_CATEGORY_IDENTIFIER,
+		])
+	})
+
+	it("keeps ordinary phone notifications when CarPlay category registration is unsupported", async () => {
+		const settings = {
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+		}
+		const existing = toScheduledRecords(
+			buildNotificationRequests(settings, { includeCarPlayCategory: false }),
+		)
+		const fakeClient = createFakeClient({
+			permissions: grantedPermissions,
+			existing,
+			categoryRegistrationSupported: false,
+		})
+
+		const result = await reconcileNotificationSchedule(fakeClient, settings)
+
+		expect(result.status).toBe("unchanged")
+		expect(result.carPlayEligibility).toBe("unsupported")
+		expect(fakeClient.scheduled).toEqual([])
+	})
+
+	it("restores category-less fallback repeaters if category-only migration scheduling fails", async () => {
+		const settings = {
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+		}
+		const existing = toScheduledRecords(
+			buildNotificationRequests(settings, { includeCarPlayCategory: false }),
+		)
+		const fakeClient = createFakeClient({
+			permissions: grantedPermissions,
+			existing,
+			scheduleFailuresRemaining: 1,
+		})
+
+		const result = await reconcileNotificationSchedule(fakeClient, settings)
+
+		expect(result.status).toBe("migrated")
+		expect(result.carPlayEligibility).toBe("degraded")
+		expect(fakeClient.canceledIds).toEqual(existing.map((record) => record.identifier))
+		expect(fakeClient.scheduled.map((request) => request.content.categoryIdentifier)).toEqual([
+			undefined,
+		])
 	})
 
 	it("migrates old DATE-trigger batches to repeaters in one reconciliation pass", async () => {
@@ -537,7 +654,9 @@ describe("reconcileNotificationSchedule", () => {
 		expect(await fakeClient.getAllScheduledNotificationsAsync()).toEqual(
 			expect.arrayContaining([
 				expect.objectContaining({ identifier: foreignNotification.identifier }),
-				expect.objectContaining({ identifier: "hour-beeper.notification.calendar.minute-00" }),
+				expect.objectContaining({
+					identifier: "hour-beeper.notification.calendar.minute-00",
+				}),
 			]),
 		)
 	})
@@ -620,7 +739,9 @@ function pluckRequests(requests: HourBeeperNotificationRequest[]) {
 	}))
 }
 
-function toScheduledRecords(requests: HourBeeperNotificationRequest[]): ScheduledNotificationRecord[] {
+function toScheduledRecords(
+	requests: HourBeeperNotificationRequest[],
+): ScheduledNotificationRecord[] {
 	return requests.map((request) => ({
 		identifier: request.identifier,
 		content: request.content,
@@ -675,15 +796,22 @@ function createFakeClient({
 	existing = [],
 	presented = [],
 	scheduleFailuresRemaining = 0,
+	categoryRegistrationSupported = true,
+	categoryRegistrationFails = false,
 }: {
 	permissions: Awaited<ReturnType<NotificationClient["getPermissionsAsync"]>>
 	existing?: ScheduledNotificationRecord[]
 	presented?: PresentedNotificationRecord[]
 	scheduleFailuresRemaining?: number
+	categoryRegistrationSupported?: boolean
+	categoryRegistrationFails?: boolean
 }) {
 	const scheduled: HourBeeperNotificationRequest[] = []
 	const canceledIds: string[] = []
 	const dismissedIds: string[] = []
+	const categoryRegistrations: Array<typeof carPlayCategoryOptions> = []
+	const permissionRequests: Array<Parameters<NotificationClient["requestPermissionsAsync"]>[0]> =
+		[]
 	const existingState = [...existing]
 	const presentedState = [...presented]
 	let remainingScheduleFailures = scheduleFailuresRemaining
@@ -692,14 +820,29 @@ function createFakeClient({
 		scheduled: HourBeeperNotificationRequest[]
 		canceledIds: string[]
 		dismissedIds: string[]
+		categoryRegistrations: Array<typeof carPlayCategoryOptions>
+		permissionRequests: Array<Parameters<NotificationClient["requestPermissionsAsync"]>[0]>
 	} = {
 		scheduled,
 		canceledIds,
 		dismissedIds,
+		categoryRegistrations,
+		permissionRequests,
+		...(categoryRegistrationSupported
+			? {
+					async registerChimeNotificationCategoryAsync() {
+						if (categoryRegistrationFails) {
+							throw new Error("category registration failed")
+						}
+						categoryRegistrations.push(carPlayCategoryOptions)
+					},
+				}
+			: {}),
 		async getPermissionsAsync() {
 			return permissions
 		},
-		async requestPermissionsAsync() {
+		async requestPermissionsAsync(options) {
+			permissionRequests.push(options)
 			return permissions
 		},
 		async getAllScheduledNotificationsAsync() {

@@ -6,13 +6,15 @@ A minimal iOS-first Expo app that emits a brief recurring beep at selected times
 
 Hour Beeper now ships with a single delivery path:
 
-| Path | How it works | Tradeoff |
-| --- | --- | --- |
+| Path              | How it works                                                                                                         | Tradeoff                                                                                                                      |
+| ----------------- | -------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------- |
 | **Notifications** | Schedules slot-based repeating local notifications with a custom bundled sound. Works on all supported iOS versions. | Uses grouping and best-effort cleanup to keep the stack small, but terminated-app delivery may still leave visible artifacts. |
 
 ## Bundled Sounds
 
 Tap any bundled sound in the app to play a short foreground preview. Preview playback is UI feedback only; scheduled notification delivery still follows the notification path and should be validated on a physical device.
+
+CarPlay beeps are also notification-driven: scheduled chimes use a CarPlay-eligible iOS notification category when supported by Expo/iOS. This is not a dedicated CarPlay app and does not bypass Focus, Silent Mode, notification volume, or per-app “Show in CarPlay” settings. See `docs/testing/carplay-notification-beeps.md` for the validation matrix; physical CarPlay evidence is required before treating issue #6 as fully validated.
 
 - **Casio** (default) — Casio F-91W inspired chime
 - **Mid** — 1200 Hz digital beep
@@ -49,7 +51,7 @@ For Simulator-only work:
 bun x expo run:ios
 ```
 
-> **Note:** Physical-device testing is still required for repeating notification delivery, custom sound playback, foreground sound preview behavior (including silent switch and volume observations), Notification Center cleanup behavior, reboot/relaunch alignment, and timezone/DST/local-clock validation.
+> **Note:** Physical-device testing is still required for repeating notification delivery, custom sound playback, CarPlay audible routing, foreground sound preview behavior (including silent switch and volume observations), Notification Center cleanup behavior, reboot/relaunch alignment, and timezone/DST/local-clock validation. Use `docs/testing/carplay-notification-beeps.md` for CarPlay-specific validation.
 >
 > If you previously ran an older internal AlarmKit dogfood build, do a manual reset/uninstall before testing the current notification-only app.
 
