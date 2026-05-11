@@ -6,6 +6,7 @@ const VALID_PROFILES = ["production", "staging", "development", "development-sim
 const VALID_PLATFORMS = ["ios", "android"] as const
 const VALID_PROFILE_SET = new Set<string>(VALID_PROFILES)
 const VALID_PLATFORM_SET = new Set<string>(VALID_PLATFORMS)
+const APPLE_TEAM_ID = "CAG2W9M777"
 
 type BuildProfile = (typeof VALID_PROFILES)[number]
 type BuildPlatform = (typeof VALID_PLATFORMS)[number]
@@ -40,6 +41,10 @@ function kickOffBuild(profile: BuildProfile, platform: BuildPlatform, autoSubmit
 
 	const result = spawnSync("bun", easArgs, {
 		encoding: "utf8",
+		env: {
+			...process.env,
+			EXPO_APPLE_TEAM_ID: process.env.EXPO_APPLE_TEAM_ID ?? APPLE_TEAM_ID,
+		},
 		stdio: ["inherit", "pipe", "inherit"],
 	})
 
