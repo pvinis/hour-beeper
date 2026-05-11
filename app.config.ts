@@ -3,7 +3,11 @@ import "tsx/cjs"
 import { execSync } from "child_process"
 import type { ExpoConfig } from "@expo/config-types"
 import packageJson from "./package.json" with { type: "json" }
-import { NOTIFICATION_SOUND_PATHS } from "./src/features/chime/sounds"
+import {
+	ANDROID_NOTIFICATION_SOUND_PATHS,
+	DEFAULT_ANDROID_NOTIFICATION_CHANNEL_ID,
+	NOTIFICATION_SOUND_PATHS,
+} from "./src/features/chime/sounds"
 
 type AppVariant = "development" | "staging" | "production"
 
@@ -13,6 +17,10 @@ type VariantConfig = {
 	scheme: string
 	ios: {
 		bundleIdentifier: string
+		icon: string
+	}
+	android: {
+		package: string
 		icon: string
 	}
 }
@@ -25,6 +33,10 @@ const appConfigDevelopment: VariantConfig = {
 		bundleIdentifier: "com.pvinis.hourbeeper.dev",
 		icon: "./assets/app-icon-dev.png",
 	},
+	android: {
+		package: "com.pvinis.hourbeeper.dev",
+		icon: "./assets/app-icon-dev.png",
+	},
 }
 
 const appConfigStaging: VariantConfig = {
@@ -35,6 +47,10 @@ const appConfigStaging: VariantConfig = {
 		bundleIdentifier: "com.pvinis.hourbeeper.stag",
 		icon: "./assets/app-icon-staging.png",
 	},
+	android: {
+		package: "com.pvinis.hourbeeper.stag",
+		icon: "./assets/app-icon-staging.png",
+	},
 }
 
 const appConfigProduction: VariantConfig = {
@@ -43,6 +59,10 @@ const appConfigProduction: VariantConfig = {
 	scheme: "hour-beeper",
 	ios: {
 		bundleIdentifier: "com.pvinis.hourbeeper",
+		icon: "./assets/app-icon.png",
+	},
+	android: {
+		package: "com.pvinis.hourbeeper",
 		icon: "./assets/app-icon.png",
 	},
 }
@@ -80,6 +100,15 @@ export default (): ExpoConfig => ({
 		"expo-router",
 		"expo-sqlite",
 		[
+			"expo-notifications",
+			{
+				icon: "./assets/notification-icon-android.png",
+				color: "#f5c542",
+				defaultChannel: DEFAULT_ANDROID_NOTIFICATION_CHANNEL_ID,
+				sounds: ANDROID_NOTIFICATION_SOUND_PATHS,
+			},
+		],
+		[
 			"./plugins/withNotificationSoundsOnly",
 			{
 				sounds: NOTIFICATION_SOUND_PATHS,
@@ -107,6 +136,15 @@ export default (): ExpoConfig => ({
 		infoPlist: {
 			ITSAppUsesNonExemptEncryption: false,
 		},
+	},
+	android: {
+		package: appConfig.android.package,
+		icon: appConfig.android.icon,
+		adaptiveIcon: {
+			foregroundImage: appConfig.android.icon,
+			backgroundColor: "#111111",
+		},
+		permissions: ["android.permission.POST_NOTIFICATIONS"],
 	},
 	extra: {
 		eas: { projectId: "9c602eea-1e88-4851-8243-4046d4a056d9" },

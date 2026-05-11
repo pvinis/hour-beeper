@@ -9,6 +9,7 @@ import {
 import {
 	buildNotificationRequests,
 	configureNotificationRuntime,
+	getAndroidNotificationChannelDefinitions,
 	dismissPreviousPresentedHourBeeperNotification,
 	dismissPresentedHourBeeperNotifications,
 	dismissPresentedNotificationIfOwned,
@@ -42,7 +43,7 @@ describe("buildNotificationRequests", () => {
 					minute: 0,
 				},
 				content: expect.objectContaining({
-					sound: "soft-beep.wav",
+					sound: "soft_beep.wav",
 					threadIdentifier: "hour-beeper.chimes",
 					data: expect.objectContaining({
 						source: "hour-beeper",
@@ -161,6 +162,35 @@ describe("buildNotificationRequests", () => {
 		])
 	})
 
+	it("builds Android requests with channel-bound sound metadata", () => {
+		const settings = {
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+			sound: "low" as const,
+		}
+
+		const requests = buildNotificationRequests(settings, { platform: "android" })
+
+		expect(requests).toEqual([
+			expect.objectContaining({
+				identifier: "hour-beeper.notification.calendar.minute-00",
+				trigger: {
+					type: "calendar",
+					repeats: true,
+					minute: 0,
+					channelId: "hour_beeper_chime_low",
+				},
+				content: expect.objectContaining({
+					sound: "soft_beep.wav",
+					data: expect.objectContaining({
+						androidChannelId: "hour_beeper_chime_low",
+						sound: "low",
+					}),
+				}),
+			}),
+		])
+	})
+
 	it("changing the selected sound changes the payload while leaving slot identity stable", () => {
 		const lowRequests = buildNotificationRequests({
 			...DEFAULT_CHIME_SETTINGS,
@@ -179,17 +209,28 @@ describe("buildNotificationRequests", () => {
 			midRequests.map((request) => request.identifier),
 		)
 		expect(lowRequests.map((request) => request.content.sound)).toEqual([
-			"soft-beep.wav",
-			"soft-beep.wav",
+			"soft_beep.wav",
+			"soft_beep.wav",
 		])
 		expect(midRequests.map((request) => request.content.sound)).toEqual([
-			"digital-beep.wav",
-			"digital-beep.wav",
+			"digital_beep.wav",
+			"digital_beep.wav",
 		])
 	})
 
 	it("returns no requests when chimes are disabled", () => {
 		expect(buildNotificationRequests(DEFAULT_CHIME_SETTINGS)).toEqual([])
+	})
+})
+
+describe("Android notification channels", () => {
+	it("defines one channel for each bundled sound", () => {
+		expect(getAndroidNotificationChannelDefinitions()).toEqual([
+			{ id: "hour_beeper_chime_bellio", name: "Hour Bell — Bellio", sound: "bellio_beep.wav" },
+			{ id: "hour_beeper_chime_mid", name: "Hour Bell — Mid", sound: "digital_beep.wav" },
+			{ id: "hour_beeper_chime_classic", name: "Hour Bell — Classic", sound: "classic_beep.wav" },
+			{ id: "hour_beeper_chime_low", name: "Hour Bell — Low", sound: "soft_beep.wav" },
+		])
 	})
 })
 
@@ -215,6 +256,32 @@ describe("toExpoTriggerInput", () => {
 		})
 		expect(trigger).not.toHaveProperty("hour")
 		expect(trigger).not.toHaveProperty("second")
+	})
+
+	it("includes Android channel ids when adapting Android repeaters", () => {
+		const Notifications = {
+			SchedulableTriggerInputTypes: {
+				CALENDAR: "calendar",
+				TIME_INTERVAL: "timeInterval",
+			},
+		} as typeof import("expo-notifications")
+		const request = buildNotificationRequests(
+			{
+				...DEFAULT_CHIME_SETTINGS,
+				enabled: true,
+				sound: "mid",
+			},
+			{ platform: "android" },
+		)[0]!
+
+		const trigger = toExpoTriggerInput(Notifications, request.trigger)
+
+		expect(trigger).toEqual({
+			type: "calendar",
+			repeats: true,
+			minute: 0,
+			channelId: "hour_beeper_chime_mid",
+		})
 	})
 })
 
@@ -243,7 +310,7 @@ describe("dismissPresentedNotificationIfOwned", () => {
 		const foreignNotification = {
 			identifier: "other-app.notification.2026-04-16T11:00:00.000Z",
 			content: {
-				sound: "soft-beep.wav",
+				sound: "soft_beep.wav",
 				data: { source: "other-app", sound: "low" },
 			},
 			date: 100,
@@ -296,7 +363,7 @@ describe("dismissPresentedHourBeeperNotifications", () => {
 		const foreignNotification = {
 			identifier: "other-app.notification.2026-04-16T13:00:00.000Z",
 			content: {
-				sound: "digital-beep.wav",
+				sound: "digital_beep.wav",
 				data: { source: "other-app", sound: "mid" },
 			},
 			date: 150,
@@ -430,6 +497,26 @@ describe("configureNotificationRuntime", () => {
 })
 
 describe("reconcileNotificationSchedule", () => {
+	it("ensures Android channels before scheduling Android requests", async () => {
+		const settings = {
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+			sound: "classic" as const,
+		}
+		const fakeClient = createFakeClient({
+			permissions: grantedPermissions,
+			platform: "android",
+		})
+
+		const result = await reconcileNotificationSchedule(fakeClient, settings)
+
+		expect(result.status).toBe("scheduled")
+		expect(fakeClient.ensuredAndroidChannels).toEqual(getAndroidNotificationChannelDefinitions())
+		expect(fakeClient.scheduled.map((request) => request.trigger)).toEqual([
+			{ type: "calendar", repeats: true, minute: 0, channelId: "hour_beeper_chime_classic" },
+		])
+	})
+
 	it("replaces stale requests when the schedule or sound changes", async () => {
 		const existingSettings = {
 			...DEFAULT_CHIME_SETTINGS,
@@ -453,8 +540,8 @@ describe("reconcileNotificationSchedule", () => {
 		expect(result.status).toBe("scheduled")
 		expect(result.canceledIds).toEqual(existing.map((request) => request.identifier))
 		expect(fakeClient.scheduled.map((request) => request.content.sound)).toEqual([
-			"digital-beep.wav",
-			"digital-beep.wav",
+			"digital_beep.wav",
+			"digital_beep.wav",
 		])
 		expect(fakeClient.scheduled.map((request) => request.identifier)).toEqual([
 			"hour-beeper.notification.calendar.11-00",
@@ -519,7 +606,7 @@ describe("reconcileNotificationSchedule", () => {
 		const foreignNotification: ScheduledNotificationRecord = {
 			identifier: "other-app.notification.2026-04-16T11:00:00.000Z",
 			content: {
-				sound: "digital-beep.wav",
+				sound: "digital_beep.wav",
 				data: { source: "other-app", sound: "mid" },
 			},
 			trigger: { type: "date", date: "2026-04-16T11:00:00.000Z" },
@@ -559,6 +646,28 @@ describe("reconcileNotificationSchedule", () => {
 		})
 
 		expect(result.status).toBe("cleared")
+		expect(result.canceledIds).toEqual(existing.map((request) => request.identifier))
+		expect(fakeClient.scheduled).toEqual([])
+	})
+
+	it("surfaces blocked Android channels without scheduling notifications and clears owned requests", async () => {
+		const settings = {
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+			sound: "low" as const,
+		}
+		const existing = toScheduledRecords(buildNotificationRequests(settings, { platform: "android" }))
+		const fakeClient = createFakeClient({
+			permissions: grantedPermissions,
+			platform: "android",
+			existing,
+			androidChannels: [{ id: "hour_beeper_chime_low", importance: 2 }],
+		})
+
+		const result = await reconcileNotificationSchedule(fakeClient, settings)
+
+		expect(result.status).toBe("blocked")
+		expect(result.permission.status).toBe("blocked")
 		expect(result.canceledIds).toEqual(existing.map((request) => request.identifier))
 		expect(fakeClient.scheduled).toEqual([])
 	})
@@ -675,27 +784,48 @@ function createFakeClient({
 	existing = [],
 	presented = [],
 	scheduleFailuresRemaining = 0,
+	platform,
+	androidChannels,
 }: {
 	permissions: Awaited<ReturnType<NotificationClient["getPermissionsAsync"]>>
 	existing?: ScheduledNotificationRecord[]
 	presented?: PresentedNotificationRecord[]
 	scheduleFailuresRemaining?: number
+	platform?: NotificationClient["platform"]
+	androidChannels?: NonNullable<Awaited<ReturnType<NonNullable<NotificationClient["getAndroidNotificationChannelsAsync"]>>>>
 }) {
 	const scheduled: HourBeeperNotificationRequest[] = []
 	const canceledIds: string[] = []
 	const dismissedIds: string[] = []
+	const ensuredAndroidChannels: Parameters<NonNullable<NotificationClient["ensureAndroidNotificationChannelsAsync"]>>[0] = []
 	const existingState = [...existing]
 	const presentedState = [...presented]
+	const androidChannelState = androidChannels ? [...androidChannels] : null
 	let remainingScheduleFailures = scheduleFailuresRemaining
 
 	const client: NotificationClient & {
 		scheduled: HourBeeperNotificationRequest[]
 		canceledIds: string[]
 		dismissedIds: string[]
+		ensuredAndroidChannels: typeof ensuredAndroidChannels
 	} = {
+		platform,
 		scheduled,
 		canceledIds,
 		dismissedIds,
+		ensuredAndroidChannels,
+		async ensureAndroidNotificationChannelsAsync(channels) {
+			ensuredAndroidChannels.splice(0, ensuredAndroidChannels.length, ...channels)
+			if (androidChannelState) {
+				return
+			}
+		},
+		async getAndroidNotificationChannelsAsync() {
+			return androidChannelState ?? ensuredAndroidChannels.map((channel) => ({
+				id: channel.id,
+				importance: 6,
+			}))
+		},
 		async getPermissionsAsync() {
 			return permissions
 		},

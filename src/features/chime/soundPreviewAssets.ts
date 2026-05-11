@@ -1,7 +1,7 @@
-import bellioBeep from "@assets/sounds/bellio-beep.wav"
-import classicBeep from "@assets/sounds/classic-beep.wav"
-import digitalBeep from "@assets/sounds/digital-beep.wav"
-import softBeep from "@assets/sounds/soft-beep.wav"
+import bellioBeep from "@assets/sounds/bellio_beep.wav"
+import classicBeep from "@assets/sounds/classic_beep.wav"
+import digitalBeep from "@assets/sounds/digital_beep.wav"
+import softBeep from "@assets/sounds/soft_beep.wav"
 
 import type { SoundPreviewSource } from "./soundPreview"
 import { CHIME_SOUND_IDS, type ChimeSound } from "./types"

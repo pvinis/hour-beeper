@@ -31,6 +31,20 @@ describe("getPermissionBannerContent", () => {
 		})
 	})
 
+	it("points blocked Android notification settings at Settings", () => {
+		const banner = getPermissionBannerContent({
+			notificationStatus: "blocked",
+		})
+
+		expect(banner).toEqual({
+			tone: "blocked",
+			title: "Notifications blocked",
+			message: "Open Settings to turn notifications or chime sound channels back on.",
+			action: "settings",
+			actionLabel: "Open Settings",
+		})
+	})
+
 	it("returns no banner when notification permission is already granted", () => {
 		const banner = getPermissionBannerContent({
 			notificationStatus: "granted",

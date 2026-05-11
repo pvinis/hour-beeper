@@ -25,6 +25,18 @@ describe("recordReconciliation", () => {
 		expect(next.history[0]?.status).toBe("scheduled")
 	})
 
+	it("records blocked Android notification state", () => {
+		const state = recordReconciliation(DEFAULT_DIAGNOSTICS_STATE, {
+			status: "blocked",
+			artifactCount: null,
+			notificationPermission: "blocked",
+		})
+
+		expect(state.notificationPermission).toBe("blocked")
+		expect(state.lastScheduledArtifactCount).toBeNull()
+		expect(state.history[0]?.status).toBe("blocked")
+	})
+
 	it("records failed reconciliation with actionable error state", () => {
 		const state = recordReconciliation(DEFAULT_DIAGNOSTICS_STATE, {
 			status: "blocked",

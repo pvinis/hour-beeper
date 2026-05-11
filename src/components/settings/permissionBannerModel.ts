@@ -23,6 +23,16 @@ export function getPermissionBannerContent({
 		}
 	}
 
+	if (notificationStatus === "blocked") {
+		return {
+			tone: "blocked",
+			title: "Notifications blocked",
+			message: "Open Settings to turn notifications or chime sound channels back on.",
+			action: "settings",
+			actionLabel: "Open Settings",
+		}
+	}
+
 	if (notificationStatus === "unknown") {
 		return {
 			tone: "warning",

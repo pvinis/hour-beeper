@@ -6,7 +6,12 @@ import {
 	type NotificationPermissionState,
 } from "./permissions"
 import { getScheduleTimes } from "./schedule"
-import { getNotificationSoundFilename } from "./sounds"
+import {
+	CHIME_SOUND_OPTIONS,
+	getAndroidNotificationChannelId,
+	getAndroidNotificationSoundFilename,
+	getNotificationSoundFilename,
+} from "./sounds"
 import type { ChimeSettings, ChimeSound, LocalTime } from "./types"
 
 const NOTIFICATION_ID_PREFIX = "hour-beeper.notification"
@@ -14,11 +19,14 @@ const NOTIFICATION_SOURCE = "hour-beeper"
 const NOTIFICATION_THREAD_IDENTIFIER = "hour-beeper.chimes"
 const REPEATING_INTERVAL_SECONDS = 60
 
+export type NotificationPlatform = "ios" | "android"
+
 export interface HourBeeperNotificationData extends Record<string, unknown> {
 	source: typeof NOTIFICATION_SOURCE
 	slotKey: string
 	triggerType: "calendar" | "timeInterval"
 	sound: ChimeSound
+	androidChannelId?: string
 }
 
 export interface HourBeeperNotificationContent {
@@ -38,11 +46,13 @@ export type HourBeeperNotificationTrigger =
 			minute?: number
 			second?: number
 			timezone?: string
+			channelId?: string
 	  }
 	| {
 			type: "timeInterval"
 			repeats: true
 			seconds: number
+			channelId?: string
 	  }
 
 export interface HourBeeperNotificationRequest {
@@ -59,11 +69,13 @@ export type NotificationTriggerRecord =
 			minute?: number
 			second?: number
 			timezone?: string | null
+			channelId?: string
 	  }
 	| {
 			type: "timeInterval"
 			repeats?: boolean
 			seconds: number
+			channelId?: string
 	  }
 	| {
 			type: "date"
@@ -90,7 +102,21 @@ export interface NotificationRecord {
 export type ScheduledNotificationRecord = NotificationRecord
 export type PresentedNotificationRecord = NotificationRecord
 
+export interface AndroidNotificationChannelDefinition {
+	id: string
+	name: string
+	sound: string
+}
+
+export interface AndroidNotificationChannelState {
+	id: string
+	importance?: number | null
+}
+
 export interface NotificationClient extends NotificationPermissionClient {
+	platform?: NotificationPlatform
+	ensureAndroidNotificationChannelsAsync?(channels: AndroidNotificationChannelDefinition[]): Promise<void>
+	getAndroidNotificationChannelsAsync?(): Promise<AndroidNotificationChannelState[]>
 	getAllScheduledNotificationsAsync(): Promise<ScheduledNotificationRecord[]>
 	getPresentedNotificationsAsync(): Promise<PresentedNotificationRecord[]>
 	scheduleNotificationAsync(request: HourBeeperNotificationRequest): Promise<string>
@@ -151,9 +177,10 @@ let notificationRuntimeCleanup: (() => void) | null = null
 
 export function buildNotificationRequests(
 	settings: ChimeSettings,
-	_options: {
+	options: {
 		from?: unknown
 		count?: number
+		platform?: NotificationPlatform
 	} = {},
 ): HourBeeperNotificationRequest[] {
 	if (!settings.enabled) {
@@ -161,19 +188,25 @@ export function buildNotificationRequests(
 	}
 
 	const slots = getNotificationSlots(settings)
+	const platform = options.platform ?? "ios"
+	const androidChannelId = getAndroidNotificationChannelId(settings.sound)
+	const notificationSound = platform === "android"
+		? getAndroidNotificationSoundFilename(settings.sound)
+		: getNotificationSoundFilename(settings.sound)
 
 	return slots.map((slot) => ({
 		identifier: createNotificationIdentifier(slot),
-		trigger: slot.trigger,
+		trigger: platform === "android" ? { ...slot.trigger, channelId: androidChannelId } : slot.trigger,
 		content: {
 			title: "Hour Beeper",
 			body: slot.body,
-			sound: getNotificationSoundFilename(settings.sound),
+			sound: notificationSound,
 			data: {
 				source: NOTIFICATION_SOURCE,
 				slotKey: slot.slotKey,
 				triggerType: slot.trigger.type,
 				sound: settings.sound,
+				...(platform === "android" ? { androidChannelId } : {}),
 			},
 			threadIdentifier: NOTIFICATION_THREAD_IDENTIFIER,
 			interruptionLevel: "active",
@@ -219,7 +252,25 @@ export async function reconcileNotificationSchedule(
 		}
 	}
 
-	const desired = buildNotificationRequests(settings, options)
+	if (client.platform === "android" && client.ensureAndroidNotificationChannelsAsync) {
+		await client.ensureAndroidNotificationChannelsAsync(getAndroidNotificationChannelDefinitions())
+	}
+
+	const desired = buildNotificationRequests(settings, { ...options, platform: client.platform })
+	const blockedAndroidChannelIds = await getBlockedAndroidChannelIds(client, desired)
+
+	if (blockedAndroidChannelIds.length > 0) {
+		const canceledIds = await cancelNotifications(client, existing)
+
+		return {
+			status: "blocked",
+			permission: { ...permission, status: "blocked", isGranted: false },
+			canceledIds,
+			scheduledIds: [],
+			requestCount: 0,
+		}
+	}
+
 
 	if (hasMatchingNotificationPlan(existing, desired)) {
 		return {
@@ -355,6 +406,10 @@ export async function configureNotificationRuntime(
 
 	await configureForegroundNotifications(notifications)
 
+	if (client.platform === "android" && client.ensureAndroidNotificationChannelsAsync) {
+		await client.ensureAndroidNotificationChannelsAsync(getAndroidNotificationChannelDefinitions())
+	}
+
 	void dismissPresentedHourBeeperNotifications(client)
 
 	const notificationSubscription = notifications.addNotificationReceivedListener((notification) => {
@@ -387,18 +442,49 @@ export async function configureNotificationRuntime(
 
 export async function createExpoNotificationClient(): Promise<NotificationClient> {
 	const Notifications = await import("expo-notifications")
+	const { Platform } = await import("react-native")
+	const platform: NotificationPlatform = Platform.OS === "android" ? "android" : "ios"
 
 	return {
+		platform,
+		ensureAndroidNotificationChannelsAsync: async (channels) => {
+			if (platform !== "android") {
+				return
+			}
+
+			for (const channel of channels) {
+				await Notifications.setNotificationChannelAsync(channel.id, {
+					name: channel.name,
+					importance: Notifications.AndroidImportance.HIGH,
+					sound: channel.sound,
+				})
+			}
+		},
+		getAndroidNotificationChannelsAsync: async () => {
+			if (platform !== "android") {
+				return []
+			}
+
+			const channels = await Notifications.getNotificationChannelsAsync()
+			return (channels ?? []).map((channel) => ({
+				id: channel.id,
+				importance: channel.importance,
+			}))
+		},
 		getPermissionsAsync: () =>
 			Notifications.getPermissionsAsync() as Promise<NotificationPermissionResponse>,
 		requestPermissionsAsync: () =>
-			Notifications.requestPermissionsAsync({
-				ios: {
-					allowAlert: true,
-					allowBadge: false,
-					allowSound: true,
-				},
-			}) as Promise<NotificationPermissionResponse>,
+			Notifications.requestPermissionsAsync(
+				platform === "ios"
+					? {
+							ios: {
+								allowAlert: true,
+								allowBadge: false,
+								allowSound: true,
+							},
+						}
+					: undefined,
+			) as Promise<NotificationPermissionResponse>,
 		getAllScheduledNotificationsAsync: async () => {
 			const requests = await Notifications.getAllScheduledNotificationsAsync()
 
@@ -428,6 +514,14 @@ export async function createExpoNotificationClient(): Promise<NotificationClient
 			Notifications.cancelScheduledNotificationAsync(identifier),
 		dismissNotificationAsync: (identifier) => Notifications.dismissNotificationAsync(identifier),
 	}
+}
+
+export function getAndroidNotificationChannelDefinitions(): AndroidNotificationChannelDefinition[] {
+	return CHIME_SOUND_OPTIONS.map((option) => ({
+		id: option.androidChannelId,
+		name: `Hour Bell — ${option.label}`,
+		sound: option.androidNotificationFilename,
+	}))
 }
 
 interface NotificationSlot {
@@ -500,6 +594,42 @@ function normalizeIdentifierSegment(value: string) {
 
 function pad2(value: number) {
 	return value.toString().padStart(2, "0")
+}
+
+async function getBlockedAndroidChannelIds(
+	client: NotificationClient,
+	desired: HourBeeperNotificationRequest[],
+) {
+	if (client.platform !== "android" || !client.getAndroidNotificationChannelsAsync) {
+		return []
+	}
+
+	const effectiveChannelIds = new Set(
+		desired
+			.map((request) => request.trigger.channelId)
+			.filter((channelId): channelId is string => typeof channelId === "string"),
+	)
+
+	if (effectiveChannelIds.size === 0) {
+		return []
+	}
+
+	const channels = await client.getAndroidNotificationChannelsAsync()
+	const channelsById = new Map(channels.map((channel) => [channel.id, channel]))
+	const blockedChannelIds: string[] = []
+
+	for (const channelId of effectiveChannelIds) {
+		const channel = channelsById.get(channelId)
+		if (!channel || isAndroidChannelBlocked(channel)) {
+			blockedChannelIds.push(channelId)
+		}
+	}
+
+	return blockedChannelIds
+}
+
+function isAndroidChannelBlocked(channel: AndroidNotificationChannelState) {
+	return typeof channel.importance === "number" && channel.importance <= 2
 }
 
 function hasMatchingNotificationPlan(
@@ -580,9 +710,15 @@ function getTriggerFingerprint(trigger?: NotificationTriggerRecord | HourBeeperN
 				trigger.minute ?? "*",
 				trigger.second ?? "*",
 				trigger.timezone ?? "local",
+				trigger.channelId ?? "default-channel",
 			].join(":")
 		case "timeInterval":
-			return ["timeInterval", trigger.repeats ? "repeat" : "once", trigger.seconds].join(":")
+			return [
+				"timeInterval",
+				trigger.repeats ? "repeat" : "once",
+				trigger.seconds,
+				trigger.channelId ?? "default-channel",
+			].join(":")
 		case "date":
 			return "date:stale"
 		case "unknown":
@@ -684,6 +820,7 @@ function normalizeTrigger(trigger: unknown): NotificationTriggerRecord | null {
 				minute: toInteger(trigger.minute),
 				second: toInteger(trigger.second),
 				timezone: typeof trigger.timezone === "string" ? trigger.timezone : null,
+				channelId: typeof trigger.channelId === "string" ? trigger.channelId : undefined,
 			}
 		case "timeInterval":
 			return typeof trigger.seconds === "number"
@@ -691,6 +828,7 @@ function normalizeTrigger(trigger: unknown): NotificationTriggerRecord | null {
 						type: "timeInterval",
 						repeats: typeof trigger.repeats === "boolean" ? trigger.repeats : undefined,
 						seconds: trigger.seconds,
+						channelId: typeof trigger.channelId === "string" ? trigger.channelId : undefined,
 					}
 				: { type: "unknown", rawType: trigger.type }
 		case "date":
@@ -729,6 +867,9 @@ export function toExpoTriggerInput(
 			if (trigger.second !== undefined) {
 				calendarTrigger.second = trigger.second
 			}
+			if (trigger.channelId !== undefined) {
+				calendarTrigger.channelId = trigger.channelId
+			}
 
 			return calendarTrigger as import("expo-notifications").NotificationTriggerInput
 		}
@@ -737,6 +878,7 @@ export function toExpoTriggerInput(
 				type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL as import("expo-notifications").SchedulableTriggerInputTypes.TIME_INTERVAL,
 				repeats: trigger.repeats,
 				seconds: trigger.seconds,
+				...(trigger.channelId !== undefined ? { channelId: trigger.channelId } : {}),
 			}
 		default: {
 			const exhaustiveTrigger: never = trigger
