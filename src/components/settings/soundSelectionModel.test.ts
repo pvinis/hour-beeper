@@ -17,10 +17,10 @@ describe("selectAndPreviewSound", () => {
 		const setSound = vi.fn()
 		const previewSound = vi.fn()
 
-		selectAndPreviewSound("casio", { setSound, previewSound })
+		selectAndPreviewSound("bellio", { setSound, previewSound })
 
-		expect(setSound).toHaveBeenCalledWith("casio")
-		expect(previewSound).toHaveBeenCalledWith("casio")
+		expect(setSound).toHaveBeenCalledWith("bellio")
+		expect(previewSound).toHaveBeenCalledWith("bellio")
 	})
 
 	it("keeps selection when preview throws synchronously", () => {

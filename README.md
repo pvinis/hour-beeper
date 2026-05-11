@@ -1,10 +1,10 @@
-# Hour Beeper
+# Hour Bell
 
-A minimal iOS-first Expo app that emits a brief recurring beep at selected times — inspired by old Casio watch hourly chimes.
+A minimal iOS-first Expo app that emits a brief recurring bell at selected times — inspired by classic digital watch hourly chimes.
 
 ## Delivery
 
-Hour Beeper now ships with a single delivery path:
+Hour Bell now ships with a single delivery path:
 
 | Path | How it works | Tradeoff |
 | --- | --- | --- |
@@ -14,7 +14,7 @@ Hour Beeper now ships with a single delivery path:
 
 Tap any bundled sound in the app to play a short foreground preview. Preview playback is UI feedback only; scheduled notification delivery still follows the notification path and should be validated on a physical device.
 
-- **Casio** (default) — Casio F-91W inspired chime
+- **Bellio** (default) — classic digital watch-inspired chime
 - **Mid** — 1200 Hz digital beep
 - **Classic** — 880 Hz sine beep
 - **Low** — 660 Hz gentle tone

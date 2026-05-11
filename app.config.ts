@@ -18,7 +18,7 @@ type VariantConfig = {
 }
 
 const appConfigDevelopment: VariantConfig = {
-	name: "Hour Beeper Dev",
+	name: "Hour Bell Dev",
 	slug: "hour-beeper",
 	scheme: "hour-beeper-dev",
 	ios: {
@@ -28,7 +28,7 @@ const appConfigDevelopment: VariantConfig = {
 }
 
 const appConfigStaging: VariantConfig = {
-	name: "Hour Beeper Staging",
+	name: "Hour Bell Staging",
 	slug: "hour-beeper",
 	scheme: "hour-beeper-staging",
 	ios: {
@@ -38,7 +38,7 @@ const appConfigStaging: VariantConfig = {
 }
 
 const appConfigProduction: VariantConfig = {
-	name: "Hour Beeper",
+	name: "Hour Bell",
 	slug: "hour-beeper",
 	scheme: "hour-beeper",
 	ios: {

@@ -11,10 +11,10 @@ describe("createSoundPreviewController", () => {
 			resolveSource: (sound) => `source:${sound}`,
 		})
 
-		await controller.previewSound("casio")
+		await controller.previewSound("bellio")
 
 		expect(player.pause).toHaveBeenCalledTimes(1)
-		expect(player.replace).toHaveBeenCalledWith("source:casio")
+		expect(player.replace).toHaveBeenCalledWith("source:bellio")
 		expect(player.seekTo).toHaveBeenCalledWith(0)
 		expect(player.play).toHaveBeenCalledTimes(1)
 	})
