@@ -1,0 +1,12 @@
+# Xcode user state
+xcuserdata/
+*.xcuserstate
+
+# Local build products
+build/
+DerivedData/
+*.ipa
+*.dSYM
+
+# SwiftPM/Xcode scratch
+.swiftpm/

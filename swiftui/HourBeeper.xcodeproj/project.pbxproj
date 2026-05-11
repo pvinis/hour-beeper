@@ -1,0 +1,608 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 46;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		0061267A772C57F3775904A7 /* casio-beep.wav in Resources */ = {isa = PBXBuildFile; fileRef = E56147CB8779BEA9FA99E037 /* casio-beep.wav */; };
+		032BDEC02185AF2028C7217C /* ScheduleServiceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DC24A1315EA149BD49D71B73 /* ScheduleServiceTests.swift */; };
+		05435266E8E35B93C2C0B090 /* soft-beep.wav in Resources */ = {isa = PBXBuildFile; fileRef = 3FA42312D3B8CF6F2FA36CC7 /* soft-beep.wav */; };
+		0C5342EC784AE5F1C2CA39FA /* DiagnosticsState.swift in Sources */ = {isa = PBXBuildFile; fileRef = 308AA72947C7B1F0CCD4F7F4 /* DiagnosticsState.swift */; };
+		0EFF943C66BECCF99C4D9FC5 /* digital-beep.wav in Resources */ = {isa = PBXBuildFile; fileRef = 07F14056827C28ECC4B66C80 /* digital-beep.wav */; };
+		116B7F225DA3442CDA48F351 /* HomeView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F4AA62DE5A2F12FBCC2795F /* HomeView.swift */; };
+		1D2C9E515B0056C85CA8B72A /* NotificationPlanBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = B941E5B03C32ECD83893D752 /* NotificationPlanBuilder.swift */; };
+		2DD593B6F9DFAF54B377E143 /* NotificationReconcilerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB511BFB8AA1299980352C55 /* NotificationReconcilerTests.swift */; };
+		36BC2A58CC660C80E67B4F89 /* ChimeSchedule.swift in Sources */ = {isa = PBXBuildFile; fileRef = E5F832C833BA4B4E057DC5A9 /* ChimeSchedule.swift */; };
+		3C7372ED089F6E78D1F5B1FA /* ScheduleService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7E6B579941169AF2CB5810D2 /* ScheduleService.swift */; };
+		3D3A2FA0781D61DE460B33C1 /* DiagnosticsSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 53A849277304D801EF4664DF /* DiagnosticsSectionView.swift */; };
+		76160FBB9B9D55C4D297AAF5 /* NotificationPlanBuilderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08B0DD1B1CDC7D947DC55444 /* NotificationPlanBuilderTests.swift */; };
+		8057F9006D5B0E3BE32BAEC3 /* DiagnosticsStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CE70C4C14BDA467178D6356 /* DiagnosticsStateTests.swift */; };
+		8F46853C4648E43D3C87450A /* NotificationCenterClient.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FEC4E5A5079B07BFD5347C3 /* NotificationCenterClient.swift */; };
+		90D8CE44888427903712D0BE /* HourBeeperApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 776E0F3A3CC4D33CBF1F3BD7 /* HourBeeperApp.swift */; };
+		97349C8982207E19C516BC44 /* ChimeSound.swift in Sources */ = {isa = PBXBuildFile; fileRef = CB96014A4BD0A34FCA2B4338 /* ChimeSound.swift */; };
+		9D61D64550712C0CB64A1FC5 /* NotificationDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F954F426EE6AA240C3CBD020 /* NotificationDelegate.swift */; };
+		A1BB061AB4778B1EF76B3803 /* SoundPreviewService.swift in Sources */ = {isa = PBXBuildFile; fileRef = 633240D75078E5B9A95BB1D7 /* SoundPreviewService.swift */; };
+		A668900A36CDB90C3081B412 /* SettingsStoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 61892318B7CB056AC519080D /* SettingsStoreTests.swift */; };
+		A76FAD85DE0ACD9419116109 /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 80453820A8B7880FAB98688D /* AppDelegate.swift */; };
+		AF401A617418532C70EC2154 /* SettingsStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 66E6105C128704EC320CB611 /* SettingsStore.swift */; };
+		B6C91D600ABF8AD08CA9A057 /* PermissionBannerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 581F373E0953AC6863A458AA /* PermissionBannerView.swift */; };
+		BA891BE0E2EA4C33B200A0DC /* NotificationReconciler.swift in Sources */ = {isa = PBXBuildFile; fileRef = F54B32BA1C62DE47EE6C090E /* NotificationReconciler.swift */; };
+		CA51FE72B464F7F0BD104EF6 /* SoundCatalogTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D732614FA4CC97F364E7AAFB /* SoundCatalogTests.swift */; };
+		D3AE3B8F2BC0A41AFA1B9423 /* ChimeSettings.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6F65DFCE32EEC27FD1D43633 /* ChimeSettings.swift */; };
+		D85726DC14D6705E028B9968 /* SoundSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 15E90EB0569B83B6DBD98780 /* SoundSectionView.swift */; };
+		E2459D06C2E72AA7842D0A13 /* ScheduleSectionView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2E7B8F15A2A47C7DC01DA52 /* ScheduleSectionView.swift */; };
+		E4190896C93792CB7FBC7454 /* classic-beep.wav in Resources */ = {isa = PBXBuildFile; fileRef = CABF2BDDB7B8718EA4F67F03 /* classic-beep.wav */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		6A1CCCDDD812137FD926FF12 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = DB20CCD2E8216466A481768C /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 41692152C3478592D3347289;
+			remoteInfo = HourBeeper;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		07F14056827C28ECC4B66C80 /* digital-beep.wav */ = {isa = PBXFileReference; includeInIndex = 1; path = "digital-beep.wav"; sourceTree = "<group>"; };
+		08B0DD1B1CDC7D947DC55444 /* NotificationPlanBuilderTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationPlanBuilderTests.swift; sourceTree = "<group>"; };
+		15E90EB0569B83B6DBD98780 /* SoundSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SoundSectionView.swift; sourceTree = "<group>"; };
+		2F4AA62DE5A2F12FBCC2795F /* HomeView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HomeView.swift; sourceTree = "<group>"; };
+		308AA72947C7B1F0CCD4F7F4 /* DiagnosticsState.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiagnosticsState.swift; sourceTree = "<group>"; };
+		3FA42312D3B8CF6F2FA36CC7 /* soft-beep.wav */ = {isa = PBXFileReference; includeInIndex = 1; path = "soft-beep.wav"; sourceTree = "<group>"; };
+		53A849277304D801EF4664DF /* DiagnosticsSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiagnosticsSectionView.swift; sourceTree = "<group>"; };
+		581F373E0953AC6863A458AA /* PermissionBannerView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = PermissionBannerView.swift; sourceTree = "<group>"; };
+		5CE70C4C14BDA467178D6356 /* DiagnosticsStateTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = DiagnosticsStateTests.swift; sourceTree = "<group>"; };
+		61892318B7CB056AC519080D /* SettingsStoreTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsStoreTests.swift; sourceTree = "<group>"; };
+		633240D75078E5B9A95BB1D7 /* SoundPreviewService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SoundPreviewService.swift; sourceTree = "<group>"; };
+		66E6105C128704EC320CB611 /* SettingsStore.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SettingsStore.swift; sourceTree = "<group>"; };
+		6F65DFCE32EEC27FD1D43633 /* ChimeSettings.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChimeSettings.swift; sourceTree = "<group>"; };
+		776E0F3A3CC4D33CBF1F3BD7 /* HourBeeperApp.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = HourBeeperApp.swift; sourceTree = "<group>"; };
+		7E6B579941169AF2CB5810D2 /* ScheduleService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScheduleService.swift; sourceTree = "<group>"; };
+		80453820A8B7880FAB98688D /* AppDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
+		8D3E6638F73B22DF9F02CF8C /* HourBeeperTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = HourBeeperTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		8FEC4E5A5079B07BFD5347C3 /* NotificationCenterClient.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationCenterClient.swift; sourceTree = "<group>"; };
+		9D68CB1036E3EE5D69E21534 /* HourBeeper.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = HourBeeper.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		B941E5B03C32ECD83893D752 /* NotificationPlanBuilder.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationPlanBuilder.swift; sourceTree = "<group>"; };
+		CABF2BDDB7B8718EA4F67F03 /* classic-beep.wav */ = {isa = PBXFileReference; includeInIndex = 1; path = "classic-beep.wav"; sourceTree = "<group>"; };
+		CB511BFB8AA1299980352C55 /* NotificationReconcilerTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationReconcilerTests.swift; sourceTree = "<group>"; };
+		CB96014A4BD0A34FCA2B4338 /* ChimeSound.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChimeSound.swift; sourceTree = "<group>"; };
+		D2E7B8F15A2A47C7DC01DA52 /* ScheduleSectionView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScheduleSectionView.swift; sourceTree = "<group>"; };
+		D732614FA4CC97F364E7AAFB /* SoundCatalogTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SoundCatalogTests.swift; sourceTree = "<group>"; };
+		DC24A1315EA149BD49D71B73 /* ScheduleServiceTests.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ScheduleServiceTests.swift; sourceTree = "<group>"; };
+		E56147CB8779BEA9FA99E037 /* casio-beep.wav */ = {isa = PBXFileReference; includeInIndex = 1; path = "casio-beep.wav"; sourceTree = "<group>"; };
+		E5F832C833BA4B4E057DC5A9 /* ChimeSchedule.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = ChimeSchedule.swift; sourceTree = "<group>"; };
+		F54B32BA1C62DE47EE6C090E /* NotificationReconciler.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationReconciler.swift; sourceTree = "<group>"; };
+		F954F426EE6AA240C3CBD020 /* NotificationDelegate.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = NotificationDelegate.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		18DB2DCE299256C3F68F8D87 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		B4D7315553634F264BD6C1ED /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		055E586952E36C994FD2F169 /* HourBeeperTests */ = {
+			isa = PBXGroup;
+			children = (
+				5CE70C4C14BDA467178D6356 /* DiagnosticsStateTests.swift */,
+				08B0DD1B1CDC7D947DC55444 /* NotificationPlanBuilderTests.swift */,
+				CB511BFB8AA1299980352C55 /* NotificationReconcilerTests.swift */,
+				DC24A1315EA149BD49D71B73 /* ScheduleServiceTests.swift */,
+				61892318B7CB056AC519080D /* SettingsStoreTests.swift */,
+				D732614FA4CC97F364E7AAFB /* SoundCatalogTests.swift */,
+			);
+			name = HourBeeperTests;
+			path = HourBeeperTests;
+			sourceTree = "<group>";
+		};
+		0E11C0EF69F0C4F258BEAB2D /* iOS */ = {
+			isa = PBXGroup;
+			children = (
+			);
+			name = iOS;
+			sourceTree = "<group>";
+		};
+		4F41547BDF75C901E15641F2 /* Services */ = {
+			isa = PBXGroup;
+			children = (
+				8FEC4E5A5079B07BFD5347C3 /* NotificationCenterClient.swift */,
+				F954F426EE6AA240C3CBD020 /* NotificationDelegate.swift */,
+				B941E5B03C32ECD83893D752 /* NotificationPlanBuilder.swift */,
+				F54B32BA1C62DE47EE6C090E /* NotificationReconciler.swift */,
+				7E6B579941169AF2CB5810D2 /* ScheduleService.swift */,
+				66E6105C128704EC320CB611 /* SettingsStore.swift */,
+				633240D75078E5B9A95BB1D7 /* SoundPreviewService.swift */,
+			);
+			name = Services;
+			path = Services;
+			sourceTree = "<group>";
+		};
+		53EB1496407165C7293806C0 /* Frameworks */ = {
+			isa = PBXGroup;
+			children = (
+				0E11C0EF69F0C4F258BEAB2D /* iOS */,
+			);
+			name = Frameworks;
+			sourceTree = "<group>";
+		};
+		5C66D148B6DB8E4B86811616 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				9D68CB1036E3EE5D69E21534 /* HourBeeper.app */,
+				8D3E6638F73B22DF9F02CF8C /* HourBeeperTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		5EAD5C9389B7D042A99ACEDC = {
+			isa = PBXGroup;
+			children = (
+				5C66D148B6DB8E4B86811616 /* Products */,
+				53EB1496407165C7293806C0 /* Frameworks */,
+				727B7CA0B5D32DCA444D0CDE /* HourBeeper */,
+				055E586952E36C994FD2F169 /* HourBeeperTests */,
+			);
+			sourceTree = "<group>";
+		};
+		727B7CA0B5D32DCA444D0CDE /* HourBeeper */ = {
+			isa = PBXGroup;
+			children = (
+				DCCD28759FD414506AF32CC2 /* Models */,
+				4F41547BDF75C901E15641F2 /* Services */,
+				7C21CC3F551E6533B19226B1 /* Views */,
+				B51C352FD09016710BD71B28 /* Resources */,
+				776E0F3A3CC4D33CBF1F3BD7 /* HourBeeperApp.swift */,
+				80453820A8B7880FAB98688D /* AppDelegate.swift */,
+			);
+			name = HourBeeper;
+			path = HourBeeper;
+			sourceTree = "<group>";
+		};
+		7C21CC3F551E6533B19226B1 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				53A849277304D801EF4664DF /* DiagnosticsSectionView.swift */,
+				2F4AA62DE5A2F12FBCC2795F /* HomeView.swift */,
+				581F373E0953AC6863A458AA /* PermissionBannerView.swift */,
+				D2E7B8F15A2A47C7DC01DA52 /* ScheduleSectionView.swift */,
+				15E90EB0569B83B6DBD98780 /* SoundSectionView.swift */,
+			);
+			name = Views;
+			path = Views;
+			sourceTree = "<group>";
+		};
+		99B487583FEF3C92C96B5079 /* Sounds */ = {
+			isa = PBXGroup;
+			children = (
+				E56147CB8779BEA9FA99E037 /* casio-beep.wav */,
+				CABF2BDDB7B8718EA4F67F03 /* classic-beep.wav */,
+				07F14056827C28ECC4B66C80 /* digital-beep.wav */,
+				3FA42312D3B8CF6F2FA36CC7 /* soft-beep.wav */,
+			);
+			name = Sounds;
+			path = Sounds;
+			sourceTree = "<group>";
+		};
+		B51C352FD09016710BD71B28 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				99B487583FEF3C92C96B5079 /* Sounds */,
+			);
+			name = Resources;
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		DCCD28759FD414506AF32CC2 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				E5F832C833BA4B4E057DC5A9 /* ChimeSchedule.swift */,
+				6F65DFCE32EEC27FD1D43633 /* ChimeSettings.swift */,
+				CB96014A4BD0A34FCA2B4338 /* ChimeSound.swift */,
+				308AA72947C7B1F0CCD4F7F4 /* DiagnosticsState.swift */,
+			);
+			name = Models;
+			path = Models;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		3C061CB5B6CEBD4EFD5CA510 /* HourBeeperTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 91B9F93A06C9065B2A441E16 /* Build configuration list for PBXNativeTarget "HourBeeperTests" */;
+			buildPhases = (
+				19CE3B10EFCB5D72190B17D8 /* Sources */,
+				B4D7315553634F264BD6C1ED /* Frameworks */,
+				C986F6631104C0E011368DAF /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				2056CDE9D0602D1CE6A12DB5 /* PBXTargetDependency */,
+			);
+			name = HourBeeperTests;
+			productName = HourBeeperTests;
+			productReference = 8D3E6638F73B22DF9F02CF8C /* HourBeeperTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		41692152C3478592D3347289 /* HourBeeper */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 0FECFFDA6D08D978AC0FF669 /* Build configuration list for PBXNativeTarget "HourBeeper" */;
+			buildPhases = (
+				EB7C8F76B8860893CC6B6A03 /* Sources */,
+				18DB2DCE299256C3F68F8D87 /* Frameworks */,
+				39319C5DE031464438A485D8 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = HourBeeper;
+			productName = HourBeeper;
+			productReference = 9D68CB1036E3EE5D69E21534 /* HourBeeper.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		DB20CCD2E8216466A481768C /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				LastSwiftUpdateCheck = 1600;
+				LastUpgradeCheck = 1600;
+			};
+			buildConfigurationList = 1A471FE1AE92325CA1BB84B8 /* Build configuration list for PBXProject "HourBeeper" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 5EAD5C9389B7D042A99ACEDC;
+			minimizedProjectReferenceProxies = 0;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 5C66D148B6DB8E4B86811616 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				41692152C3478592D3347289 /* HourBeeper */,
+				3C061CB5B6CEBD4EFD5CA510 /* HourBeeperTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		39319C5DE031464438A485D8 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				0061267A772C57F3775904A7 /* casio-beep.wav in Resources */,
+				E4190896C93792CB7FBC7454 /* classic-beep.wav in Resources */,
+				0EFF943C66BECCF99C4D9FC5 /* digital-beep.wav in Resources */,
+				05435266E8E35B93C2C0B090 /* soft-beep.wav in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		C986F6631104C0E011368DAF /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		19CE3B10EFCB5D72190B17D8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8057F9006D5B0E3BE32BAEC3 /* DiagnosticsStateTests.swift in Sources */,
+				76160FBB9B9D55C4D297AAF5 /* NotificationPlanBuilderTests.swift in Sources */,
+				2DD593B6F9DFAF54B377E143 /* NotificationReconcilerTests.swift in Sources */,
+				032BDEC02185AF2028C7217C /* ScheduleServiceTests.swift in Sources */,
+				A668900A36CDB90C3081B412 /* SettingsStoreTests.swift in Sources */,
+				CA51FE72B464F7F0BD104EF6 /* SoundCatalogTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EB7C8F76B8860893CC6B6A03 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				90D8CE44888427903712D0BE /* HourBeeperApp.swift in Sources */,
+				A76FAD85DE0ACD9419116109 /* AppDelegate.swift in Sources */,
+				36BC2A58CC660C80E67B4F89 /* ChimeSchedule.swift in Sources */,
+				D3AE3B8F2BC0A41AFA1B9423 /* ChimeSettings.swift in Sources */,
+				97349C8982207E19C516BC44 /* ChimeSound.swift in Sources */,
+				0C5342EC784AE5F1C2CA39FA /* DiagnosticsState.swift in Sources */,
+				8F46853C4648E43D3C87450A /* NotificationCenterClient.swift in Sources */,
+				9D61D64550712C0CB64A1FC5 /* NotificationDelegate.swift in Sources */,
+				1D2C9E515B0056C85CA8B72A /* NotificationPlanBuilder.swift in Sources */,
+				BA891BE0E2EA4C33B200A0DC /* NotificationReconciler.swift in Sources */,
+				3C7372ED089F6E78D1F5B1FA /* ScheduleService.swift in Sources */,
+				AF401A617418532C70EC2154 /* SettingsStore.swift in Sources */,
+				A1BB061AB4778B1EF76B3803 /* SoundPreviewService.swift in Sources */,
+				3D3A2FA0781D61DE460B33C1 /* DiagnosticsSectionView.swift in Sources */,
+				116B7F225DA3442CDA48F351 /* HomeView.swift in Sources */,
+				B6C91D600ABF8AD08CA9A057 /* PermissionBannerView.swift in Sources */,
+				E2459D06C2E72AA7842D0A13 /* ScheduleSectionView.swift in Sources */,
+				D85726DC14D6705E028B9968 /* SoundSectionView.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		2056CDE9D0602D1CE6A12DB5 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			name = HourBeeper;
+			target = 41692152C3478592D3347289 /* HourBeeper */;
+			targetProxy = 6A1CCCDDD812137FD926FF12 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		03116F1D06F13C3453167A18 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Debug;
+		};
+		341E8CC7CDD91166392D3932 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CAG2W9M777;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pvinis.hourbeeper.swiftui.dev.tests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HourBeeper.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HourBeeper";
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		652FB5FA20C466E255D648EB /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CAG2W9M777;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pvinis.hourbeeper.swiftui.dev;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		763FA126D902A5D8FE0CA59D /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CAG2W9M777;
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_KEY_ITSAppUsesNonExemptEncryption = NO;
+				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
+				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
+				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
+				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPhone = UIInterfaceOrientationPortrait;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pvinis.hourbeeper.swiftui.dev;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+			};
+			name = Debug;
+		};
+		86C2DC4EFC3EFF8CAFB4E344 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 6.0;
+			};
+			name = Release;
+		};
+		C81DBFD6B07B9ABB7E4A1F78 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_ENABLE_OBJC_WEAK = NO;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = CAG2W9M777;
+				GENERATE_INFOPLIST_FILE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MARKETING_VERSION = 0.1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = com.pvinis.hourbeeper.swiftui.dev.tests;
+				SDKROOT = iphoneos;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 1;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/HourBeeper.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/HourBeeper";
+			};
+			name = Debug;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		0FECFFDA6D08D978AC0FF669 /* Build configuration list for PBXNativeTarget "HourBeeper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				652FB5FA20C466E255D648EB /* Release */,
+				763FA126D902A5D8FE0CA59D /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		1A471FE1AE92325CA1BB84B8 /* Build configuration list for PBXProject "HourBeeper" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				03116F1D06F13C3453167A18 /* Debug */,
+				86C2DC4EFC3EFF8CAFB4E344 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		91B9F93A06C9065B2A441E16 /* Build configuration list for PBXNativeTarget "HourBeeperTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				341E8CC7CDD91166392D3932 /* Release */,
+				C81DBFD6B07B9ABB7E4A1F78 /* Debug */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = DB20CCD2E8216466A481768C /* Project object */;
+}
