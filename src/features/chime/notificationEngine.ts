@@ -12,6 +12,7 @@ import type { ChimeSettings, ChimeSound, LocalTime } from "./types"
 const NOTIFICATION_ID_PREFIX = "hour-beeper.notification"
 const NOTIFICATION_SOURCE = "hour-beeper"
 const NOTIFICATION_THREAD_IDENTIFIER = "hour-beeper.chimes"
+export const CHIME_NOTIFICATION_CATEGORY_IDENTIFIER = "hourbeeperchime"
 const REPEATING_INTERVAL_SECONDS = 60
 
 export interface HourBeeperNotificationData extends Record<string, unknown> {
@@ -27,6 +28,7 @@ export interface HourBeeperNotificationContent {
 	sound: string
 	data: HourBeeperNotificationData
 	threadIdentifier: string
+	categoryIdentifier?: string
 	interruptionLevel: "active"
 }
 
@@ -78,6 +80,7 @@ interface NotificationRecordContent {
 	sound?: string | boolean | null
 	data?: Record<string, unknown>
 	threadIdentifier?: string | null
+	categoryIdentifier?: string | null
 }
 
 export interface NotificationRecord {
@@ -91,6 +94,7 @@ export type ScheduledNotificationRecord = NotificationRecord
 export type PresentedNotificationRecord = NotificationRecord
 
 export interface NotificationClient extends NotificationPermissionClient {
+	registerChimeNotificationCategoryAsync?(): Promise<void>
 	getAllScheduledNotificationsAsync(): Promise<ScheduledNotificationRecord[]>
 	getPresentedNotificationsAsync(): Promise<PresentedNotificationRecord[]>
 	scheduleNotificationAsync(request: HourBeeperNotificationRequest): Promise<string>
@@ -98,9 +102,12 @@ export interface NotificationClient extends NotificationPermissionClient {
 	dismissNotificationAsync(identifier: string): Promise<void>
 }
 
+export type CarPlayNotificationEligibility = "registered" | "degraded" | "unsupported"
+
 export interface NotificationReconciliationResult {
 	status: "scheduled" | "migrated" | "unchanged" | "cleared" | "blocked"
 	permission: NotificationPermissionState
+	carPlayEligibility: CarPlayNotificationEligibility
 	canceledIds: string[]
 	scheduledIds: string[]
 	requestCount: number
@@ -133,7 +140,9 @@ interface SubscriptionLike {
 }
 
 interface NotificationRuntimeModule extends NotificationHandlerModule {
-	addNotificationReceivedListener(listener: (notification: NotificationRuntimeEvent) => void): SubscriptionLike
+	addNotificationReceivedListener(
+		listener: (notification: NotificationRuntimeEvent) => void,
+	): SubscriptionLike
 }
 
 interface AppStateAdapter {
@@ -151,9 +160,10 @@ let notificationRuntimeCleanup: (() => void) | null = null
 
 export function buildNotificationRequests(
 	settings: ChimeSettings,
-	_options: {
+	options: {
 		from?: unknown
 		count?: number
+		includeCarPlayCategory?: boolean
 	} = {},
 ): HourBeeperNotificationRequest[] {
 	if (!settings.enabled) {
@@ -176,6 +186,9 @@ export function buildNotificationRequests(
 				sound: settings.sound,
 			},
 			threadIdentifier: NOTIFICATION_THREAD_IDENTIFIER,
+			...(options.includeCarPlayCategory === false
+				? {}
+				: { categoryIdentifier: CHIME_NOTIFICATION_CATEGORY_IDENTIFIER }),
 			interruptionLevel: "active",
 		},
 	}))
@@ -190,10 +203,13 @@ export async function reconcileNotificationSchedule(
 		requestPermissionsIfNeeded?: boolean
 	} = {},
 ): Promise<NotificationReconciliationResult> {
+	const carPlayEligibility = await registerChimeNotificationCategory(client)
 	const permission = options.requestPermissionsIfNeeded
 		? await requestNotificationPermissionState(client)
 		: await getNotificationPermissionState(client)
-	const existing = (await client.getAllScheduledNotificationsAsync()).filter(isHourBeeperNotification)
+	const existing = (await client.getAllScheduledNotificationsAsync()).filter(
+		isHourBeeperNotification,
+	)
 
 	if (!settings.enabled) {
 		const canceledIds = await cancelNotifications(client, existing)
@@ -201,6 +217,7 @@ export async function reconcileNotificationSchedule(
 		return {
 			status: "cleared",
 			permission,
+			carPlayEligibility,
 			canceledIds,
 			scheduledIds: [],
 			requestCount: 0,
@@ -213,38 +230,114 @@ export async function reconcileNotificationSchedule(
 		return {
 			status: "blocked",
 			permission,
+			carPlayEligibility,
 			canceledIds,
 			scheduledIds: [],
 			requestCount: 0,
 		}
 	}
 
-	const desired = buildNotificationRequests(settings, options)
+	const shouldIncludeCarPlayCategory = carPlayEligibility === "registered"
+	const desired = buildNotificationRequests(settings, {
+		...options,
+		includeCarPlayCategory: shouldIncludeCarPlayCategory,
+	})
 
 	if (hasMatchingNotificationPlan(existing, desired)) {
 		return {
 			status: "unchanged",
 			permission,
+			carPlayEligibility,
 			canceledIds: [],
 			scheduledIds: [],
 			requestCount: desired.length,
 		}
 	}
 
+	if (
+		!shouldIncludeCarPlayCategory &&
+		hasMatchingNotificationPlan(
+			existing,
+			buildNotificationRequests(settings, { ...options, includeCarPlayCategory: true }),
+		)
+	) {
+		return {
+			status: "unchanged",
+			permission,
+			carPlayEligibility,
+			canceledIds: [],
+			scheduledIds: [],
+			requestCount: desired.length,
+		}
+	}
+
+	const didMigrateLegacyRequests = existing.some((record) => record.trigger?.type === "date")
+	const didMigrateCategoryOnly =
+		shouldIncludeCarPlayCategory &&
+		hasMatchingNotificationPlan(
+			existing,
+			buildNotificationRequests(settings, { ...options, includeCarPlayCategory: false }),
+		)
 	const canceledIds = await cancelNotifications(client, existing)
 	const scheduledIds: string[] = []
-	const didMigrateLegacyRequests = existing.some((record) => record.trigger?.type === "date")
 
-	for (const request of desired) {
-		scheduledIds.push(await client.scheduleNotificationAsync(request))
+	try {
+		for (const request of desired) {
+			scheduledIds.push(await client.scheduleNotificationAsync(request))
+		}
+	} catch (error) {
+		if (!didMigrateCategoryOnly) {
+			throw error
+		}
+
+		console.warn(
+			"[notificationEngine] Failed to migrate chime notifications to the CarPlay category; restoring ordinary phone notifications:",
+			error,
+		)
+		scheduledIds.splice(0, scheduledIds.length)
+		for (const fallbackRequest of buildNotificationRequests(settings, {
+			...options,
+			includeCarPlayCategory: false,
+		})) {
+			scheduledIds.push(await client.scheduleNotificationAsync(fallbackRequest))
+		}
+
+		return {
+			status: "migrated",
+			permission,
+			carPlayEligibility: "degraded",
+			canceledIds,
+			scheduledIds,
+			requestCount: desired.length,
+		}
 	}
 
 	return {
-		status: didMigrateLegacyRequests ? "migrated" : "scheduled",
+		status: didMigrateLegacyRequests || didMigrateCategoryOnly ? "migrated" : "scheduled",
 		permission,
+		carPlayEligibility,
 		canceledIds,
 		scheduledIds,
 		requestCount: desired.length,
+	}
+}
+
+export async function registerChimeNotificationCategory(
+	client: Pick<NotificationClient, "registerChimeNotificationCategoryAsync">,
+): Promise<CarPlayNotificationEligibility> {
+	if (!client.registerChimeNotificationCategoryAsync) {
+		return "unsupported"
+	}
+
+	try {
+		await client.registerChimeNotificationCategoryAsync()
+		return "registered"
+	} catch (error) {
+		console.warn(
+			"[notificationEngine] Failed to register CarPlay notification category:",
+			error,
+		)
+		return "degraded"
 	}
 }
 
@@ -286,14 +379,21 @@ export async function dismissPreviousPresentedHourBeeperNotification(
 		const currentIndex = orderedPresented.findIndex(({ record }) => record === currentRecord)
 		const previousRecord = currentIndex > 0 ? orderedPresented[currentIndex - 1]?.record : null
 
-		if (!previousRecord || getNotificationSortTimestamp(previousRecord) === currentDeliveredAt && previousRecord.identifier === currentRecord.identifier) {
+		if (
+			!previousRecord ||
+			(getNotificationSortTimestamp(previousRecord) === currentDeliveredAt &&
+				previousRecord.identifier === currentRecord.identifier)
+		) {
 			return null
 		}
 
 		const didDismiss = await dismissPresentedNotificationIfOwned(client, previousRecord)
 		return didDismiss ? previousRecord.identifier : null
 	} catch (error) {
-		console.warn("[notificationEngine] Failed to dismiss previous presented notification:", error)
+		console.warn(
+			"[notificationEngine] Failed to dismiss previous presented notification:",
+			error,
+		)
 		return null
 	}
 }
@@ -321,9 +421,7 @@ export async function dismissPresentedHourBeeperNotifications(client: Notificati
 	}
 }
 
-export async function configureForegroundNotifications(
-	module?: NotificationHandlerModule,
-) {
+export async function configureForegroundNotifications(module?: NotificationHandlerModule) {
 	if (didConfigureForegroundNotifications) {
 		return
 	}
@@ -357,14 +455,16 @@ export async function configureNotificationRuntime(
 
 	void dismissPresentedHourBeeperNotifications(client)
 
-	const notificationSubscription = notifications.addNotificationReceivedListener((notification) => {
-		void dismissPreviousPresentedHourBeeperNotification(client, {
-			identifier: notification.request.identifier,
-			content: notification.request.content,
-			trigger: normalizeTrigger(notification.request.trigger),
-			date: notification.date,
-		})
-	})
+	const notificationSubscription = notifications.addNotificationReceivedListener(
+		(notification) => {
+			void dismissPreviousPresentedHourBeeperNotification(client, {
+				identifier: notification.request.identifier,
+				content: notification.request.content,
+				trigger: normalizeTrigger(notification.request.trigger),
+				date: notification.date,
+			})
+		},
+	)
 
 	const appStateSubscription = appState.addEventListener("change", (state) => {
 		if (state !== "active") {
@@ -391,19 +491,30 @@ export async function createExpoNotificationClient(): Promise<NotificationClient
 	return {
 		getPermissionsAsync: () =>
 			Notifications.getPermissionsAsync() as Promise<NotificationPermissionResponse>,
-		requestPermissionsAsync: () =>
-			Notifications.requestPermissionsAsync({
-				ios: {
-					allowAlert: true,
-					allowBadge: false,
-					allowSound: true,
+		requestPermissionsAsync: (options) =>
+			Notifications.requestPermissionsAsync(
+				options ?? {
+					ios: {
+						allowAlert: true,
+						allowBadge: false,
+						allowSound: true,
+						allowDisplayInCarPlay: true,
+					},
 				},
-			}) as Promise<NotificationPermissionResponse>,
+			) as Promise<NotificationPermissionResponse>,
+		registerChimeNotificationCategoryAsync: () =>
+			Notifications.setNotificationCategoryAsync(CHIME_NOTIFICATION_CATEGORY_IDENTIFIER, [], {
+				allowInCarPlay: true,
+			}).then(() => undefined),
 		getAllScheduledNotificationsAsync: async () => {
 			const requests = await Notifications.getAllScheduledNotificationsAsync()
 
 			return requests.map((request) =>
-				toNotificationRecord(request.identifier, request.content, normalizeTrigger(request.trigger)),
+				toNotificationRecord(
+					request.identifier,
+					request.content,
+					normalizeTrigger(request.trigger),
+				),
 			)
 		},
 		getPresentedNotificationsAsync: async () => {
@@ -426,7 +537,8 @@ export async function createExpoNotificationClient(): Promise<NotificationClient
 			}),
 		cancelScheduledNotificationAsync: (identifier) =>
 			Notifications.cancelScheduledNotificationAsync(identifier),
-		dismissNotificationAsync: (identifier) => Notifications.dismissNotificationAsync(identifier),
+		dismissNotificationAsync: (identifier) =>
+			Notifications.dismissNotificationAsync(identifier),
 	}
 }
 
@@ -539,6 +651,7 @@ function getRequestFingerprint(request: HourBeeperNotificationRequest) {
 		request.content.sound,
 		request.content.data.sound,
 		request.content.threadIdentifier,
+		request.content.categoryIdentifier ?? "",
 		request.content.data.slotKey,
 		request.content.data.triggerType,
 		getTriggerFingerprint(request.trigger),
@@ -549,9 +662,12 @@ function getRecordFingerprint(record: NotificationRecord) {
 	const sound = typeof record.content.sound === "string" ? record.content.sound : ""
 	const data = record.content.data
 	const soundId = isRecord(data) && typeof data.sound === "string" ? data.sound : ""
-	const threadIdentifier = typeof record.content.threadIdentifier === "string"
-		? record.content.threadIdentifier
-		: ""
+	const threadIdentifier =
+		typeof record.content.threadIdentifier === "string" ? record.content.threadIdentifier : ""
+	const categoryIdentifier =
+		typeof record.content.categoryIdentifier === "string"
+			? record.content.categoryIdentifier
+			: ""
 	const slotKey = getDataSlotKey(data) ?? ""
 	const triggerType = getDataTriggerType(data) ?? ""
 
@@ -560,13 +676,16 @@ function getRecordFingerprint(record: NotificationRecord) {
 		sound,
 		soundId,
 		threadIdentifier,
+		categoryIdentifier,
 		slotKey,
 		triggerType,
 		getTriggerFingerprint(record.trigger),
 	].join("|")
 }
 
-function getTriggerFingerprint(trigger?: NotificationTriggerRecord | HourBeeperNotificationTrigger | null) {
+function getTriggerFingerprint(
+	trigger?: NotificationTriggerRecord | HourBeeperNotificationTrigger | null,
+) {
 	if (!trigger) {
 		return "none"
 	}
@@ -654,6 +773,7 @@ function toNotificationRecord(
 		sound?: string | boolean | null
 		data?: Record<string, unknown>
 		threadIdentifier?: string | null
+		categoryIdentifier?: string | null
 	},
 	trigger?: NotificationTriggerRecord | null,
 	date?: number | null,
@@ -664,6 +784,7 @@ function toNotificationRecord(
 			sound: content.sound,
 			data: content.data,
 			threadIdentifier: content.threadIdentifier,
+			categoryIdentifier: content.categoryIdentifier,
 		},
 		trigger: trigger ?? null,
 		date: typeof date === "number" ? date : null,
@@ -697,7 +818,9 @@ function normalizeTrigger(trigger: unknown): NotificationTriggerRecord | null {
 			return {
 				type: "date",
 				date:
-					trigger.date instanceof Date || typeof trigger.date === "number" || typeof trigger.date === "string"
+					trigger.date instanceof Date ||
+					typeof trigger.date === "number" ||
+					typeof trigger.date === "string"
 						? trigger.date
 						: null,
 			}
@@ -716,7 +839,8 @@ export function toExpoTriggerInput(
 	switch (trigger.type) {
 		case "calendar": {
 			const calendarTrigger: Record<string, unknown> = {
-				type: Notifications.SchedulableTriggerInputTypes.CALENDAR as import("expo-notifications").SchedulableTriggerInputTypes.CALENDAR,
+				type: Notifications.SchedulableTriggerInputTypes
+					.CALENDAR as import("expo-notifications").SchedulableTriggerInputTypes.CALENDAR,
 				repeats: trigger.repeats,
 			}
 
@@ -734,7 +858,8 @@ export function toExpoTriggerInput(
 		}
 		case "timeInterval":
 			return {
-				type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL as import("expo-notifications").SchedulableTriggerInputTypes.TIME_INTERVAL,
+				type: Notifications.SchedulableTriggerInputTypes
+					.TIME_INTERVAL as import("expo-notifications").SchedulableTriggerInputTypes.TIME_INTERVAL,
 				repeats: trigger.repeats,
 				seconds: trigger.seconds,
 			}

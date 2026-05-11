@@ -1,7 +1,5 @@
 # TODO
 
-
-
 ## Custom per-hour beeps
 
 - [ ] Finish the implementation plan from `docs/brainstorms/2026-04-23-custom-per-hour-beeps-requirements.md`.
@@ -39,6 +37,7 @@
 - [ ] Test across DST / timezone changes.
 - [ ] Test after force-killing the app.
 - [ ] Test without reopening the app after initial scheduling.
+- [ ] Validate CarPlay notification beeps on physical CarPlay using `docs/testing/carplay-notification-beeps.md`, including backgrounded, locked, force-killed, upgraded-user, Focus/Silent Mode, and custom-vs-default sound cases.
 - [ ] Run a 3-day unattended test.
 
 ## Nice follow-ups
