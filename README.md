@@ -14,7 +14,7 @@ Hour Bell now ships with a single delivery path:
 
 ## Bundled Sounds
 
-Tap any bundled sound in the app to play a short foreground preview. Preview playback is UI feedback only; scheduled notification delivery still follows the notification path and should be validated on a physical device.
+Tap any bundled sound in the app to play a short foreground preview. Preview playback is app-owned UI feedback configured to mix with other media. Foreground scheduled chimes also use app-owned playback when Hour Bell can safely handle the notification while active. Background, locked, and terminated scheduled delivery still follows the OS notification path and should be validated on a physical device.
 
 - **Bellio** (default) — classic digital watch-inspired chime
 - **Mid** — 1200 Hz digital beep
@@ -68,7 +68,7 @@ bun run:android
 
 Play Store submission is intentionally not configured yet; validate Android behavior first with `docs/android-validation.md`.
 
-> **Note:** Physical-device testing is still required for repeating notification delivery, custom sound playback, foreground sound preview behavior (including silent switch and volume observations), Notification Center cleanup behavior, reboot/relaunch alignment, and timezone/DST/local-clock validation.
+> **Note:** Physical-device testing is still required for repeating notification delivery, custom sound playback, foreground sound preview behavior (including silent switch and volume observations), media-continuity behavior while Apple Music/Podcasts/Spotify or Android media apps are playing, Notification Center cleanup behavior, reboot/relaunch alignment, and timezone/DST/local-clock validation.
 >
 > If you previously ran an older internal AlarmKit dogfood build, do a manual reset/uninstall before testing the current notification-only app.
 

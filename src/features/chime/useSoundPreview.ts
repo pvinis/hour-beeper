@@ -1,6 +1,7 @@
 import { setAudioModeAsync, useAudioPlayer } from "expo-audio"
 import { useEffect, useMemo } from "react"
 
+import { configureAppOwnedChimeAudio } from "./audioPolicy"
 import { createSoundPreviewController } from "./soundPreview"
 import { getSoundPreviewSource } from "./soundPreviewAssets"
 
@@ -12,12 +13,7 @@ export function useSoundPreview() {
 	)
 
 	useEffect(() => {
-		void setAudioModeAsync({
-			allowsRecording: false,
-			interruptionMode: "mixWithOthers",
-			playsInSilentMode: true,
-			shouldPlayInBackground: false,
-		})
+		void configureAppOwnedChimeAudio(setAudioModeAsync)
 	}, [])
 
 	return controller.previewSound

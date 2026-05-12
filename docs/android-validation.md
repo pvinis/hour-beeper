@@ -32,8 +32,12 @@ Implementation note (2026-05-12): Android wall-clock schedules should use Expo `
 - [ ] Changing schedule while enabled reconciles old requests and schedules the new slots.
 - [ ] Changing sound while enabled schedules future chimes through the new sound channel.
 - [ ] Foreground delivery plays the selected sound without stacking visible in-app alerts.
+- [ ] Foreground delivery plays the selected sound while another media app is playing, and the media app continues afterward.
 - [ ] Background delivery plays the selected sound.
+- [ ] Background delivery behavior while another media app is playing is recorded in `docs/media-continuity-validation.md`.
+- [ ] Locked-screen delivery behavior while another media app is playing is recorded in `docs/media-continuity-validation.md`.
 - [ ] Terminated-app delivery plays the selected sound, or any limitation is documented.
+- [ ] Terminated-app delivery behavior while another media app is playing is recorded in `docs/media-continuity-validation.md`.
 - [ ] Force-stopped app behavior is observed and documented as unsupported/degraded if future notifications do not fire until relaunch.
 
 ## Device lifecycle
@@ -58,6 +62,7 @@ Implementation note (2026-05-12): Android wall-clock schedules should use Expo `
 
 - [ ] Upgrade with chimes enabled reconciles existing scheduled artifacts.
 - [ ] Upgrade after changing the selected sound preserves future delivery through the intended channel.
+- [ ] Upgrade after adding channel audio attributes schedules through the new versioned channel IDs and records whether old pre-attribute channels remain visible in system settings.
 - [ ] Upgrade after disabling/mutating one channel does not silently report healthy delivery if the platform exposes the problem.
 - [ ] Upgrade from an older build with missing Android channels recreates missing channels.
 
