@@ -60,9 +60,9 @@ bun android
 Android EAS build helpers mirror the iOS scripts:
 
 ```sh
-bun build:dev:android
-bun build:stag:android
-bun build:prod:android
+bun build:dev:and
+bun build:stag:and
+bun build:prod:and
 bun run:android
 ```
 
