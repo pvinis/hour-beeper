@@ -26,6 +26,7 @@
     "format": "prettier --write .",
     "tests": "vitest run",
     "tests:watch": "vitest",
+    "check:sounds": "bun scripts/check-sound-loudness.ts",
     "doctor": "bun x expo-doctor@latest",
     "doctor:fix": "bun x expo install --check",
     "add-device": "bun x eas-cli@latest device:create",
