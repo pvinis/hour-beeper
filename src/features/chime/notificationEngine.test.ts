@@ -162,7 +162,7 @@ describe("buildNotificationRequests", () => {
 		])
 	})
 
-	it("builds Android requests with channel-bound sound metadata", () => {
+	it("builds Android daily requests with channel-bound sound metadata", () => {
 		const settings = {
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
@@ -171,12 +171,14 @@ describe("buildNotificationRequests", () => {
 
 		const requests = buildNotificationRequests(settings, { platform: "android" })
 
-		expect(requests).toEqual([
+		expect(requests).toHaveLength(24)
+		expect(requests.map((request) => request.trigger.type)).not.toContain("calendar")
+		expect(requests[0]).toEqual(
 			expect.objectContaining({
-				identifier: "hour-beeper.notification.calendar.minute-00",
+				identifier: "hour-beeper.notification.daily.00-00",
 				trigger: {
-					type: "calendar",
-					repeats: true,
+					type: "daily",
+					hour: 0,
 					minute: 0,
 					channelId: "hour_beeper_chime_low",
 				},
@@ -184,10 +186,31 @@ describe("buildNotificationRequests", () => {
 					sound: "soft_beep.wav",
 					data: expect.objectContaining({
 						androidChannelId: "hour_beeper_chime_low",
+						triggerType: "daily",
 						sound: "low",
 					}),
 				}),
 			}),
+		)
+	})
+
+	it("expands Android every-30-minutes into supported daily requests", () => {
+		const requests = buildNotificationRequests(
+			{
+				...DEFAULT_CHIME_SETTINGS,
+				enabled: true,
+				schedule: { kind: "preset", preset: "every-30-minutes" },
+			},
+			{ platform: "android" },
+		)
+
+		expect(requests).toHaveLength(48)
+		expect(requests.map((request) => request.trigger.type)).not.toContain("calendar")
+		expect(requests.slice(0, 4).map((request) => request.trigger)).toEqual([
+			{ type: "daily", hour: 0, minute: 0, channelId: "hour_beeper_chime_bellio" },
+			{ type: "daily", hour: 0, minute: 30, channelId: "hour_beeper_chime_bellio" },
+			{ type: "daily", hour: 1, minute: 0, channelId: "hour_beeper_chime_bellio" },
+			{ type: "daily", hour: 1, minute: 30, channelId: "hour_beeper_chime_bellio" },
 		])
 	})
 
@@ -236,12 +259,7 @@ describe("Android notification channels", () => {
 
 describe("toExpoTriggerInput", () => {
 	it("omits undefined optional calendar fields when adapting minute-only repeaters", () => {
-		const Notifications = {
-			SchedulableTriggerInputTypes: {
-				CALENDAR: "calendar",
-				TIME_INTERVAL: "timeInterval",
-			},
-		} as typeof import("expo-notifications")
+		const Notifications = createFakeNotificationsModule()
 		const request = buildNotificationRequests({
 			...DEFAULT_CHIME_SETTINGS,
 			enabled: true,
@@ -259,12 +277,7 @@ describe("toExpoTriggerInput", () => {
 	})
 
 	it("includes Android channel ids when adapting Android repeaters", () => {
-		const Notifications = {
-			SchedulableTriggerInputTypes: {
-				CALENDAR: "calendar",
-				TIME_INTERVAL: "timeInterval",
-			},
-		} as typeof import("expo-notifications")
+		const Notifications = createFakeNotificationsModule()
 		const request = buildNotificationRequests(
 			{
 				...DEFAULT_CHIME_SETTINGS,
@@ -277,8 +290,8 @@ describe("toExpoTriggerInput", () => {
 		const trigger = toExpoTriggerInput(Notifications, request.trigger)
 
 		expect(trigger).toEqual({
-			type: "calendar",
-			repeats: true,
+			type: "daily",
+			hour: 0,
 			minute: 0,
 			channelId: "hour_beeper_chime_mid",
 		})
@@ -512,8 +525,11 @@ describe("reconcileNotificationSchedule", () => {
 
 		expect(result.status).toBe("scheduled")
 		expect(fakeClient.ensuredAndroidChannels).toEqual(getAndroidNotificationChannelDefinitions())
-		expect(fakeClient.scheduled.map((request) => request.trigger)).toEqual([
-			{ type: "calendar", repeats: true, minute: 0, channelId: "hour_beeper_chime_classic" },
+		expect(fakeClient.scheduled).toHaveLength(24)
+		expect(fakeClient.scheduled.map((request) => request.trigger).slice(0, 3)).toEqual([
+			{ type: "daily", hour: 0, minute: 0, channelId: "hour_beeper_chime_classic" },
+			{ type: "daily", hour: 1, minute: 0, channelId: "hour_beeper_chime_classic" },
+			{ type: "daily", hour: 2, minute: 0, channelId: "hour_beeper_chime_classic" },
 		])
 	})
 
@@ -719,6 +735,16 @@ describe("reconcileNotificationSchedule", () => {
 		])
 	})
 })
+
+function createFakeNotificationsModule() {
+	return {
+		SchedulableTriggerInputTypes: {
+			CALENDAR: "calendar",
+			DAILY: "daily",
+			TIME_INTERVAL: "timeInterval",
+		},
+	} as unknown as Parameters<typeof toExpoTriggerInput>[0]
+}
 
 function pluckRequests(requests: HourBeeperNotificationRequest[]) {
 	return requests.map((request) => ({

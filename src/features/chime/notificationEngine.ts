@@ -19,12 +19,19 @@ const NOTIFICATION_SOURCE = "hour-beeper"
 const NOTIFICATION_THREAD_IDENTIFIER = "hour-beeper.chimes"
 const REPEATING_INTERVAL_SECONDS = 60
 
+type ExpoNotificationTriggerTypes = {
+	SchedulableTriggerInputTypes: Pick<
+		typeof import("expo-notifications").SchedulableTriggerInputTypes,
+		"CALENDAR" | "DAILY" | "TIME_INTERVAL"
+	>
+}
+
 export type NotificationPlatform = "ios" | "android"
 
 export interface HourBeeperNotificationData extends Record<string, unknown> {
 	source: typeof NOTIFICATION_SOURCE
 	slotKey: string
-	triggerType: "calendar" | "timeInterval"
+	triggerType: "calendar" | "daily" | "timeInterval"
 	sound: ChimeSound
 	androidChannelId?: string
 }
@@ -49,6 +56,12 @@ export type HourBeeperNotificationTrigger =
 			channelId?: string
 	  }
 	| {
+			type: "daily"
+			hour: number
+			minute: number
+			channelId?: string
+	  }
+	| {
 			type: "timeInterval"
 			repeats: true
 			seconds: number
@@ -69,6 +82,12 @@ export type NotificationTriggerRecord =
 			minute?: number
 			second?: number
 			timezone?: string | null
+			channelId?: string
+	  }
+	| {
+			type: "daily"
+			hour?: number
+			minute?: number
 			channelId?: string
 	  }
 	| {
@@ -187,8 +206,8 @@ export function buildNotificationRequests(
 		return []
 	}
 
-	const slots = getNotificationSlots(settings)
 	const platform = options.platform ?? "ios"
+	const slots = getNotificationSlots(settings, platform)
 	const androidChannelId = getAndroidNotificationChannelId(settings.sound)
 	const notificationSound = platform === "android"
 		? getAndroidNotificationSoundFilename(settings.sound)
@@ -530,7 +549,7 @@ interface NotificationSlot {
 	trigger: HourBeeperNotificationTrigger
 }
 
-function getNotificationSlots(settings: ChimeSettings): NotificationSlot[] {
+function getNotificationSlots(settings: ChimeSettings, platform: NotificationPlatform): NotificationSlot[] {
 	if (settings.schedule.kind === "preset") {
 		switch (settings.schedule.preset) {
 			case "every-minute":
@@ -546,13 +565,18 @@ function getNotificationSlots(settings: ChimeSettings): NotificationSlot[] {
 					},
 				]
 			case "hourly":
-				return [createMinuteOnlySlot(0)]
+				return platform === "android"
+					? createDailySlots(getScheduleTimes(settings.schedule))
+					: [createMinuteOnlySlot(0)]
 			case "every-30-minutes":
-				return [createMinuteOnlySlot(0), createMinuteOnlySlot(30)]
+				return platform === "android"
+					? createDailySlots(getScheduleTimes(settings.schedule))
+					: [createMinuteOnlySlot(0), createMinuteOnlySlot(30)]
 		}
 	}
 
-	return getScheduleTimes(settings.schedule).map(createLocalTimeSlot)
+	const scheduleTimes = getScheduleTimes(settings.schedule)
+	return platform === "android" ? createDailySlots(scheduleTimes) : scheduleTimes.map(createLocalTimeSlot)
 }
 
 function createMinuteOnlySlot(minute: number): NotificationSlot {
@@ -563,6 +587,22 @@ function createMinuteOnlySlot(minute: number): NotificationSlot {
 			type: "calendar",
 			repeats: true,
 			minute,
+		},
+	}
+}
+
+function createDailySlots(localTimes: LocalTime[]) {
+	return localTimes.map(createDailySlot)
+}
+
+function createDailySlot(localTime: LocalTime): NotificationSlot {
+	return {
+		slotKey: toSlotKey(localTime),
+		body: `Chime for ${toSlotKey(localTime)}`,
+		trigger: {
+			type: "daily",
+			hour: localTime.hour,
+			minute: localTime.minute,
 		},
 	}
 }
@@ -712,6 +752,13 @@ function getTriggerFingerprint(trigger?: NotificationTriggerRecord | HourBeeperN
 				trigger.timezone ?? "local",
 				trigger.channelId ?? "default-channel",
 			].join(":")
+		case "daily":
+			return [
+				"daily",
+				trigger.hour ?? "*",
+				trigger.minute ?? "*",
+				trigger.channelId ?? "default-channel",
+			].join(":")
 		case "timeInterval":
 			return [
 				"timeInterval",
@@ -822,6 +869,13 @@ function normalizeTrigger(trigger: unknown): NotificationTriggerRecord | null {
 				timezone: typeof trigger.timezone === "string" ? trigger.timezone : null,
 				channelId: typeof trigger.channelId === "string" ? trigger.channelId : undefined,
 			}
+		case "daily":
+			return {
+				type: "daily",
+				hour: toInteger(trigger.hour),
+				minute: toInteger(trigger.minute),
+				channelId: typeof trigger.channelId === "string" ? trigger.channelId : undefined,
+			}
 		case "timeInterval":
 			return typeof trigger.seconds === "number"
 				? {
@@ -848,34 +902,29 @@ function normalizeTrigger(trigger: unknown): NotificationTriggerRecord | null {
 }
 
 export function toExpoTriggerInput(
-	Notifications: typeof import("expo-notifications"),
+	Notifications: ExpoNotificationTriggerTypes,
 	trigger: HourBeeperNotificationTrigger,
 ): import("expo-notifications").NotificationTriggerInput {
 	switch (trigger.type) {
-		case "calendar": {
-			const calendarTrigger: Record<string, unknown> = {
-				type: Notifications.SchedulableTriggerInputTypes.CALENDAR as import("expo-notifications").SchedulableTriggerInputTypes.CALENDAR,
+		case "calendar":
+			return {
+				type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
 				repeats: trigger.repeats,
+				...(trigger.hour !== undefined ? { hour: trigger.hour } : {}),
+				...(trigger.minute !== undefined ? { minute: trigger.minute } : {}),
+				...(trigger.second !== undefined ? { second: trigger.second } : {}),
+				...(trigger.channelId !== undefined ? { channelId: trigger.channelId } : {}),
 			}
-
-			if (trigger.hour !== undefined) {
-				calendarTrigger.hour = trigger.hour
+		case "daily":
+			return {
+				type: Notifications.SchedulableTriggerInputTypes.DAILY,
+				hour: trigger.hour,
+				minute: trigger.minute,
+				...(trigger.channelId !== undefined ? { channelId: trigger.channelId } : {}),
 			}
-			if (trigger.minute !== undefined) {
-				calendarTrigger.minute = trigger.minute
-			}
-			if (trigger.second !== undefined) {
-				calendarTrigger.second = trigger.second
-			}
-			if (trigger.channelId !== undefined) {
-				calendarTrigger.channelId = trigger.channelId
-			}
-
-			return calendarTrigger as import("expo-notifications").NotificationTriggerInput
-		}
 		case "timeInterval":
 			return {
-				type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL as import("expo-notifications").SchedulableTriggerInputTypes.TIME_INTERVAL,
+				type: Notifications.SchedulableTriggerInputTypes.TIME_INTERVAL,
 				repeats: trigger.repeats,
 				seconds: trigger.seconds,
 				...(trigger.channelId !== undefined ? { channelId: trigger.channelId } : {}),

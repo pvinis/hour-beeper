@@ -23,6 +23,8 @@ Use this checklist before calling Android support release-ready. Until the core 
 
 Validate under normal conditions first; the product target is roughly within 60 seconds of the intended boundary during dogfooding.
 
+Implementation note (2026-05-12): Android wall-clock schedules should use Expo `daily` triggers with explicit hour/minute pairs. `Every 1 min` remains a `timeInterval` trigger. If any non-minute preset fails with `Trigger of type: calendar is not supported on Android`, the installed build is stale or the trigger adapter regressed.
+
 - [ ] Hourly schedule fires at `:00`.
 - [ ] Every-30-minutes schedule fires at `:00` and `:30`.
 - [ ] Every-2-hours and every-4-hours schedules fire only on their expected hours.
