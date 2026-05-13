@@ -14,28 +14,28 @@ export const CHIME_SOUND_CATALOG = {
 		label: "Bellio",
 		notificationFilename: "bellio_beep.wav",
 		androidNotificationFilename: "bellio_beep.wav",
-		androidChannelId: "hour_beeper_chime_bellio",
+		androidChannelId: "hour_beeper_chime_bellio_v2",
 	},
 	mid: {
 		id: "mid",
 		label: "Mid",
 		notificationFilename: "digital_beep.wav",
 		androidNotificationFilename: "digital_beep.wav",
-		androidChannelId: "hour_beeper_chime_mid",
+		androidChannelId: "hour_beeper_chime_mid_v2",
 	},
 	classic: {
 		id: "classic",
 		label: "Classic",
 		notificationFilename: "classic_beep.wav",
 		androidNotificationFilename: "classic_beep.wav",
-		androidChannelId: "hour_beeper_chime_classic",
+		androidChannelId: "hour_beeper_chime_classic_v2",
 	},
 	low: {
 		id: "low",
 		label: "Low",
 		notificationFilename: "soft_beep.wav",
 		androidNotificationFilename: "soft_beep.wav",
-		androidChannelId: "hour_beeper_chime_low",
+		androidChannelId: "hour_beeper_chime_low_v2",
 	},
 } as const satisfies Record<ChimeSound, ChimeSoundMetadata>
 

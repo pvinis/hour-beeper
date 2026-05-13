@@ -180,12 +180,12 @@ describe("buildNotificationRequests", () => {
 					type: "daily",
 					hour: 0,
 					minute: 0,
-					channelId: "hour_beeper_chime_low",
+					channelId: "hour_beeper_chime_low_v2",
 				},
 				content: expect.objectContaining({
 					sound: "soft_beep.wav",
 					data: expect.objectContaining({
-						androidChannelId: "hour_beeper_chime_low",
+						androidChannelId: "hour_beeper_chime_low_v2",
 						triggerType: "daily",
 						sound: "low",
 					}),
@@ -207,10 +207,10 @@ describe("buildNotificationRequests", () => {
 		expect(requests).toHaveLength(48)
 		expect(requests.map((request) => request.trigger.type)).not.toContain("calendar")
 		expect(requests.slice(0, 4).map((request) => request.trigger)).toEqual([
-			{ type: "daily", hour: 0, minute: 0, channelId: "hour_beeper_chime_bellio" },
-			{ type: "daily", hour: 0, minute: 30, channelId: "hour_beeper_chime_bellio" },
-			{ type: "daily", hour: 1, minute: 0, channelId: "hour_beeper_chime_bellio" },
-			{ type: "daily", hour: 1, minute: 30, channelId: "hour_beeper_chime_bellio" },
+			{ type: "daily", hour: 0, minute: 0, channelId: "hour_beeper_chime_bellio_v2" },
+			{ type: "daily", hour: 0, minute: 30, channelId: "hour_beeper_chime_bellio_v2" },
+			{ type: "daily", hour: 1, minute: 0, channelId: "hour_beeper_chime_bellio_v2" },
+			{ type: "daily", hour: 1, minute: 30, channelId: "hour_beeper_chime_bellio_v2" },
 		])
 	})
 
@@ -249,10 +249,30 @@ describe("buildNotificationRequests", () => {
 describe("Android notification channels", () => {
 	it("defines one channel for each bundled sound", () => {
 		expect(getAndroidNotificationChannelDefinitions()).toEqual([
-			{ id: "hour_beeper_chime_bellio", name: "Hour Bell — Bellio", sound: "bellio_beep.wav" },
-			{ id: "hour_beeper_chime_mid", name: "Hour Bell — Mid", sound: "digital_beep.wav" },
-			{ id: "hour_beeper_chime_classic", name: "Hour Bell — Classic", sound: "classic_beep.wav" },
-			{ id: "hour_beeper_chime_low", name: "Hour Bell — Low", sound: "soft_beep.wav" },
+			{
+				id: "hour_beeper_chime_bellio_v2",
+				name: "Hour Bell — Bellio",
+				sound: "bellio_beep.wav",
+				audioAttributes: { usage: 5, contentType: 4 },
+			},
+			{
+				id: "hour_beeper_chime_mid_v2",
+				name: "Hour Bell — Mid",
+				sound: "digital_beep.wav",
+				audioAttributes: { usage: 5, contentType: 4 },
+			},
+			{
+				id: "hour_beeper_chime_classic_v2",
+				name: "Hour Bell — Classic",
+				sound: "classic_beep.wav",
+				audioAttributes: { usage: 5, contentType: 4 },
+			},
+			{
+				id: "hour_beeper_chime_low_v2",
+				name: "Hour Bell — Low",
+				sound: "soft_beep.wav",
+				audioAttributes: { usage: 5, contentType: 4 },
+			},
 		])
 	})
 })
@@ -293,7 +313,7 @@ describe("toExpoTriggerInput", () => {
 			type: "daily",
 			hour: 0,
 			minute: 0,
-			channelId: "hour_beeper_chime_mid",
+			channelId: "hour_beeper_chime_mid_v2",
 		})
 	})
 })
@@ -507,6 +527,236 @@ describe("configureNotificationRuntime", () => {
 
 		cleanup()
 	})
+
+	it("suppresses OS sound and plays owned foreground chimes through app-owned playback", async () => {
+		const [request] = buildNotificationRequests({
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+			sound: "bellio",
+		})
+		const fakeClient = createFakeClient({
+			permissions: grantedPermissions,
+		})
+		const playChime = vi.fn().mockResolvedValue(undefined)
+		const receiveListeners: Array<(notification: {
+			date: number
+			request: {
+				identifier: string
+				content: { sound?: string | boolean | null; data?: Record<string, unknown>; threadIdentifier?: string | null }
+				trigger?: unknown
+			}
+		}) => void> = []
+		let handler: null | {
+			handleNotification: (notification: {
+				date: number
+				request: {
+					identifier: string
+					content: { sound?: string | boolean | null; data?: Record<string, unknown>; threadIdentifier?: string | null }
+					trigger?: unknown
+				}
+			}) => Promise<{ shouldPlaySound: boolean }>
+		} = null
+		const notifications = {
+			setNotificationHandler: vi.fn((nextHandler) => {
+				handler = nextHandler
+			}),
+			addNotificationReceivedListener: vi.fn((listener) => {
+				receiveListeners.push(listener)
+				return { remove: vi.fn() }
+			}),
+		}
+		const appState = {
+			addEventListener: vi.fn(() => ({ remove: vi.fn() })),
+		}
+
+		const cleanup = await configureNotificationRuntime(fakeClient, {
+			notifications,
+			appState,
+			chimePlayback: { playChime },
+		})
+
+		await expect(handler!.handleNotification({
+			date: 100,
+			request: {
+				identifier: request!.identifier,
+				content: request!.content,
+				trigger: request!.trigger,
+			},
+		})).resolves.toMatchObject({ shouldPlaySound: false })
+
+		receiveListeners[0]!({
+			date: 100,
+			request: {
+				identifier: request!.identifier,
+				content: request!.content,
+				trigger: request!.trigger,
+			},
+		})
+		await Promise.resolve()
+
+		expect(playChime).toHaveBeenCalledWith("bellio")
+
+		cleanup()
+	})
+
+	it("contains playback adapter rejections and still cleans up older notifications", async () => {
+		const requests = buildNotificationRequests({
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+			schedule: createCustomHoursSchedule([11, 16]),
+		})
+		const presented = toPresentedRecords(requests.slice(0, 1), [100])
+		const fakeClient = createFakeClient({
+			permissions: grantedPermissions,
+			presented,
+		})
+		const playChime = vi.fn().mockRejectedValue(new Error("play failed"))
+		const receiveListeners: Array<(notification: {
+			date: number
+			request: {
+				identifier: string
+				content: { sound?: string | boolean | null; data?: Record<string, unknown>; threadIdentifier?: string | null }
+				trigger?: unknown
+			}
+		}) => void> = []
+		const notifications = {
+			setNotificationHandler: vi.fn(),
+			addNotificationReceivedListener: vi.fn((listener) => {
+				receiveListeners.push(listener)
+				return { remove: vi.fn() }
+			}),
+		}
+		const appState = {
+			addEventListener: vi.fn(() => ({ remove: vi.fn() })),
+		}
+		const warn = vi.spyOn(console, "warn").mockImplementation(() => {})
+
+		const cleanup = await configureNotificationRuntime(fakeClient, {
+			notifications,
+			appState,
+			chimePlayback: { playChime },
+		})
+		await Promise.resolve()
+
+		receiveListeners[0]!({
+			date: 200,
+			request: {
+				identifier: requests[1]!.identifier,
+				content: requests[1]!.content,
+				trigger: requests[1]!.trigger,
+			},
+		})
+		await Promise.resolve()
+		await Promise.resolve()
+
+		expect(playChime).toHaveBeenCalledWith("bellio")
+		expect(fakeClient.dismissedIds).toEqual([presented[0]!.identifier])
+		expect(warn).toHaveBeenCalledWith(
+			"[notificationEngine] Failed to play foreground chime:",
+			expect.any(Error),
+		)
+
+		warn.mockRestore()
+		cleanup()
+	})
+
+	it("keeps OS sound for unknown notifications and owned chimes without playback readiness", async () => {
+		const [request] = buildNotificationRequests({
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+		})
+		const fakeClient = createFakeClient({
+			permissions: grantedPermissions,
+		})
+		let handler: null | {
+			handleNotification: (notification: {
+				date: number
+				request: {
+					identifier: string
+					content: { sound?: string | boolean | null; data?: Record<string, unknown>; threadIdentifier?: string | null }
+					trigger?: unknown
+				}
+			}) => Promise<{ shouldPlaySound: boolean }>
+		} = null
+		const notifications = {
+			setNotificationHandler: vi.fn((nextHandler) => {
+				handler = nextHandler
+			}),
+			addNotificationReceivedListener: vi.fn(() => ({ remove: vi.fn() })),
+		}
+		const appState = {
+			addEventListener: vi.fn(() => ({ remove: vi.fn() })),
+		}
+
+		const cleanup = await configureNotificationRuntime(fakeClient, { notifications, appState })
+
+		await expect(handler!.handleNotification({
+			date: 100,
+			request: {
+				identifier: request!.identifier,
+				content: request!.content,
+				trigger: request!.trigger,
+			},
+		})).resolves.toMatchObject({ shouldPlaySound: true })
+		await expect(handler!.handleNotification({
+			date: 100,
+			request: {
+				identifier: "foreign",
+				content: { data: { source: "other-app" }, sound: "default" },
+			},
+		})).resolves.toMatchObject({ shouldPlaySound: true })
+
+		cleanup()
+	})
+
+	it("keeps OS sound for owned chimes with invalid sound metadata", async () => {
+		const [request] = buildNotificationRequests({
+			...DEFAULT_CHIME_SETTINGS,
+			enabled: true,
+		})
+		const fakeClient = createFakeClient({
+			permissions: grantedPermissions,
+		})
+		const playChime = vi.fn().mockResolvedValue(undefined)
+		let handler: null | {
+			handleNotification: (notification: {
+				date: number
+				request: {
+					identifier: string
+					content: { sound?: string | boolean | null; data?: Record<string, unknown>; threadIdentifier?: string | null }
+					trigger?: unknown
+				}
+			}) => Promise<{ shouldPlaySound: boolean }>
+		} = null
+		const notifications = {
+			setNotificationHandler: vi.fn((nextHandler) => {
+				handler = nextHandler
+			}),
+			addNotificationReceivedListener: vi.fn(() => ({ remove: vi.fn() })),
+		}
+		const appState = {
+			addEventListener: vi.fn(() => ({ remove: vi.fn() })),
+		}
+
+		const cleanup = await configureNotificationRuntime(fakeClient, {
+			notifications,
+			appState,
+			chimePlayback: { playChime },
+		})
+
+		await expect(handler!.handleNotification({
+			date: 100,
+			request: {
+				identifier: request!.identifier,
+				content: { ...request!.content, data: { ...request!.content.data, sound: "missing" } },
+				trigger: request!.trigger,
+			},
+		})).resolves.toMatchObject({ shouldPlaySound: true })
+
+		expect(playChime).not.toHaveBeenCalled()
+
+		cleanup()
+	})
 })
 
 describe("reconcileNotificationSchedule", () => {
@@ -527,9 +777,9 @@ describe("reconcileNotificationSchedule", () => {
 		expect(fakeClient.ensuredAndroidChannels).toEqual(getAndroidNotificationChannelDefinitions())
 		expect(fakeClient.scheduled).toHaveLength(24)
 		expect(fakeClient.scheduled.map((request) => request.trigger).slice(0, 3)).toEqual([
-			{ type: "daily", hour: 0, minute: 0, channelId: "hour_beeper_chime_classic" },
-			{ type: "daily", hour: 1, minute: 0, channelId: "hour_beeper_chime_classic" },
-			{ type: "daily", hour: 2, minute: 0, channelId: "hour_beeper_chime_classic" },
+			{ type: "daily", hour: 0, minute: 0, channelId: "hour_beeper_chime_classic_v2" },
+			{ type: "daily", hour: 1, minute: 0, channelId: "hour_beeper_chime_classic_v2" },
+			{ type: "daily", hour: 2, minute: 0, channelId: "hour_beeper_chime_classic_v2" },
 		])
 	})
 
@@ -677,7 +927,7 @@ describe("reconcileNotificationSchedule", () => {
 			permissions: grantedPermissions,
 			platform: "android",
 			existing,
-			androidChannels: [{ id: "hour_beeper_chime_low", importance: 2 }],
+			androidChannels: [{ id: "hour_beeper_chime_low_v2", importance: 2 }],
 		})
 
 		const result = await reconcileNotificationSchedule(fakeClient, settings)

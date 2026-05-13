@@ -12,12 +12,15 @@ import {
 	getAndroidNotificationSoundFilename,
 	getNotificationSoundFilename,
 } from "./sounds"
-import type { ChimeSettings, ChimeSound, LocalTime } from "./types"
+import type { AppOwnedChimePlayback } from "./chimePlayback"
+import { CHIME_SOUND_IDS, type ChimeSettings, type ChimeSound, type LocalTime } from "./types"
 
 const NOTIFICATION_ID_PREFIX = "hour-beeper.notification"
 const NOTIFICATION_SOURCE = "hour-beeper"
 const NOTIFICATION_THREAD_IDENTIFIER = "hour-beeper.chimes"
 const REPEATING_INTERVAL_SECONDS = 60
+const ANDROID_AUDIO_USAGE_NOTIFICATION = 5
+const ANDROID_AUDIO_CONTENT_TYPE_SONIFICATION = 4
 
 type ExpoNotificationTriggerTypes = {
 	SchedulableTriggerInputTypes: Pick<
@@ -125,6 +128,12 @@ export interface AndroidNotificationChannelDefinition {
 	id: string
 	name: string
 	sound: string
+	audioAttributes: AndroidNotificationChannelAudioAttributes
+}
+
+export interface AndroidNotificationChannelAudioAttributes {
+	usage: typeof ANDROID_AUDIO_USAGE_NOTIFICATION
+	contentType: typeof ANDROID_AUDIO_CONTENT_TYPE_SONIFICATION
 }
 
 export interface AndroidNotificationChannelState {
@@ -160,7 +169,7 @@ interface NotificationBehavior {
 
 interface NotificationHandlerModule {
 	setNotificationHandler(handler: {
-		handleNotification: () => Promise<NotificationBehavior>
+		handleNotification: (notification: NotificationRuntimeEvent) => Promise<NotificationBehavior>
 	}): void
 }
 
@@ -188,9 +197,9 @@ interface AppStateAdapter {
 export interface NotificationRuntimeDependencies {
 	notifications?: NotificationRuntimeModule
 	appState?: AppStateAdapter
+	chimePlayback?: AppOwnedChimePlayback
 }
 
-let didConfigureForegroundNotifications = false
 let didConfigureNotificationRuntime = false
 let notificationRuntimeCleanup: (() => void) | null = null
 
@@ -393,23 +402,27 @@ export async function dismissPresentedHourBeeperNotifications(client: Notificati
 
 export async function configureForegroundNotifications(
 	module?: NotificationHandlerModule,
+	options: { chimePlayback?: AppOwnedChimePlayback } = {},
 ) {
-	if (didConfigureForegroundNotifications) {
-		return
-	}
-
 	const notifications = module ?? (await loadNotificationRuntimeModule())
 
 	notifications.setNotificationHandler({
-		handleNotification: async () => ({
+		handleNotification: async (notification) => ({
 			shouldShowBanner: false,
 			shouldShowList: false,
-			shouldPlaySound: true,
+			shouldPlaySound: !shouldUseAppOwnedChimePlayback(
+				toNotificationRecord(
+					notification.request.identifier,
+					notification.request.content,
+					normalizeTrigger(notification.request.trigger),
+					notification.date,
+				),
+				options.chimePlayback,
+			),
 			shouldSetBadge: false,
 		}),
 	})
 
-	didConfigureForegroundNotifications = true
 }
 
 export async function configureNotificationRuntime(
@@ -423,7 +436,7 @@ export async function configureNotificationRuntime(
 	const notifications = dependencies.notifications ?? (await loadNotificationRuntimeModule())
 	const appState = dependencies.appState ?? (await loadAppStateAdapter())
 
-	await configureForegroundNotifications(notifications)
+	await configureForegroundNotifications(notifications, { chimePlayback: dependencies.chimePlayback })
 
 	if (client.platform === "android" && client.ensureAndroidNotificationChannelsAsync) {
 		await client.ensureAndroidNotificationChannelsAsync(getAndroidNotificationChannelDefinitions())
@@ -432,12 +445,21 @@ export async function configureNotificationRuntime(
 	void dismissPresentedHourBeeperNotifications(client)
 
 	const notificationSubscription = notifications.addNotificationReceivedListener((notification) => {
-		void dismissPreviousPresentedHourBeeperNotification(client, {
+		const currentRecord = {
 			identifier: notification.request.identifier,
 			content: notification.request.content,
 			trigger: normalizeTrigger(notification.request.trigger),
 			date: notification.date,
-		})
+		}
+		const sound = getAppOwnedChimePlaybackSound(currentRecord, dependencies.chimePlayback)
+
+		if (sound) {
+			void dependencies.chimePlayback?.playChime(sound).catch((error: unknown) => {
+				console.warn("[notificationEngine] Failed to play foreground chime:", error)
+			})
+		}
+
+		void dismissPreviousPresentedHourBeeperNotification(client, currentRecord)
 	})
 
 	const appStateSubscription = appState.addEventListener("change", (state) => {
@@ -476,6 +498,7 @@ export async function createExpoNotificationClient(): Promise<NotificationClient
 					name: channel.name,
 					importance: Notifications.AndroidImportance.HIGH,
 					sound: channel.sound,
+					audioAttributes: channel.audioAttributes,
 				})
 			}
 		},
@@ -540,6 +563,10 @@ export function getAndroidNotificationChannelDefinitions(): AndroidNotificationC
 		id: option.androidChannelId,
 		name: `Hour Bell — ${option.label}`,
 		sound: option.androidNotificationFilename,
+		audioAttributes: {
+			usage: ANDROID_AUDIO_USAGE_NOTIFICATION,
+			contentType: ANDROID_AUDIO_CONTENT_TYPE_SONIFICATION,
+		},
 	}))
 }
 
@@ -829,6 +856,30 @@ function isHourBeeperNotification(record: NotificationRecord) {
 	const data = record.content.data
 
 	return isRecord(data) && data.source === NOTIFICATION_SOURCE
+}
+
+function shouldUseAppOwnedChimePlayback(
+	record: NotificationRecord,
+	chimePlayback?: AppOwnedChimePlayback,
+) {
+	return getAppOwnedChimePlaybackSound(record, chimePlayback) !== null
+}
+
+function getAppOwnedChimePlaybackSound(
+	record: NotificationRecord,
+	chimePlayback?: AppOwnedChimePlayback,
+) {
+	if (!chimePlayback || !isHourBeeperNotification(record)) {
+		return null
+	}
+
+	const sound = record.content.data?.sound
+
+	return isChimeSound(sound) ? sound : null
+}
+
+function isChimeSound(value: unknown): value is ChimeSound {
+	return typeof value === "string" && CHIME_SOUND_IDS.some((sound) => sound === value)
 }
 
 function toNotificationRecord(

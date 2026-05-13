@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>PIP — hourly beep app</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=VT323&family=Doto:wght@100..900&family=Share+Tech+Mono&family=Inter:wght@400;500;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="styles.css" />
+
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+
+  <style>
+    html, body, #root { margin: 0; padding: 0; height: 100%; width: 100%; }
+    body { font-family: 'Inter', -apple-system, system-ui, sans-serif; background: #f0eee9; overflow: hidden; }
+    /* hide the iOS frame's scroll bar inside artboards */
+    .app-screen, .app-screen * { scrollbar-width: none; }
+    .app-screen::-webkit-scrollbar { display: none; }
+  </style>
+</head>
+<body>
+  <div id="root"></div>
+
+  <script type="text/babel" src="design-canvas.jsx"></script>
+  <script type="text/babel" src="ios-frame.jsx"></script>
+  <script type="text/babel" src="android-frame.jsx"></script>
+  <script type="text/babel" src="tweaks-panel.jsx"></script>
+  <script type="text/babel" src="primitives.jsx"></script>
+  <script type="text/babel" src="screens.jsx"></script>
+  <script type="text/babel" src="icons.jsx"></script>
+
+  <script type="text/babel">
+    const TWEAK_DEFAULTS = /*EDITMODE-BEGIN*/{
+      "lcdTheme": "classic",
+      "wavePlaying": true,
+      "showAndroid": true
+    }/*EDITMODE-END*/;
+
+    // Map theme → root class on the canvas. Lcd-* classes set the CSS vars
+    // for every .app-screen / .icon-tile inside.
+    const themeClass = (t) => ({
+      classic: '',
+      dark:    'lcd-dark',
+      amber:   'lcd-amber',
+    }[t] || '');
+
+    // Inline iPhone wrapper — caps content height so the absolute-positioned
+    // TabBar / bottom controls render predictably and the artboard doesn't
+    // exceed its 800px design height.
+    function Phone({ children, dark = false }) {
+      return (
+        <IOSDevice width={402} height={874} dark={dark}>
+          {children}
+        </IOSDevice>
+      );
+    }
+
+    function App() {
+      const [t, setTweak] = useTweaks(TWEAK_DEFAULTS);
+
+      // Force the wave animation off if the user toggles the preview.
+      // Re-run on every change by mounting a unique key on screens that
+      // contain waveforms.
+      const waveKey = t.wavePlaying ? 'wp-on' : 'wp-off';
+
+      return (
+        <div className={themeClass(t.lcdTheme)} style={{
+          width: '100%', height: '100%',
+        }}>
+          <DesignCanvas>
+
+            {/* ─── BRAND ─── */}
+            <DCSection id="brand" title="Brand & app icons" subtitle="Original wordmark + four icon flavors">
+              <DCArtboard id="logo"   label="PIP wordmark"           width={420} height={200}>
+                <div style={{
+                  width: '100%', height: '100%',
+                  background: 'var(--lcd-bg)',
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                  position: 'relative', overflow: 'hidden',
+                }}>
+                  <div style={{ position: 'absolute', inset: 0, background: 'repeating-linear-gradient(180deg, rgba(0,0,0,.05) 0 1px, transparent 1px 3px)' }} />
+                  <PIPLogo size={92} />
+                </div>
+              </DCArtboard>
+
+              <DCArtboard id="icon-a" label="Icon · Classic LCD"     width={180} height={180}><IconA /></DCArtboard>
+              <DCArtboard id="icon-b" label="Icon · Negative"        width={180} height={180}><IconB /></DCArtboard>
+              <DCArtboard id="icon-c" label="Icon · Wordmark"        width={180} height={180}><IconC /></DCArtboard>
+              <DCArtboard id="icon-d" label="Icon · Amber rings"     width={180} height={180}><IconD /></DCArtboard>
+            </DCSection>
+
+            {/* ─── ONBOARDING ─── */}
+            <DCSection id="onboard" title="Onboarding" subtitle="3-screen first-run, no account">
+              <DCArtboard id="ob1" label="1 · Hero"           width={402} height={874}>
+                <Phone><ScreenOnboard1 /></Phone>
+              </DCArtboard>
+              <DCArtboard id="ob2" label="2 · Three switches" width={402} height={874}>
+                <Phone><ScreenOnboard2 /></Phone>
+              </DCArtboard>
+              <DCArtboard id="ob3" label="3 · Permissions"    width={402} height={874}>
+                <Phone><ScreenOnboard3 /></Phone>
+              </DCArtboard>
+            </DCSection>
+
+            {/* ─── CORE ─── */}
+            <DCSection id="core" title="Core screens (iOS)" subtitle="Home, frequency, custom hours, sound, settings">
+              <DCArtboard id="home-on"   key={'home-on-'+waveKey} label="Home · ON"   width={402} height={874}>
+                <Phone><ScreenHomeOn /></Phone>
+              </DCArtboard>
+              <DCArtboard id="home-off"  label="Home · OFF"  width={402} height={874}>
+                <Phone><ScreenHomeOff /></Phone>
+              </DCArtboard>
+              <DCArtboard id="freq"      label="Frequency"   width={402} height={874}>
+                <Phone><ScreenFrequency /></Phone>
+              </DCArtboard>
+              <DCArtboard id="custom"    label="Custom hours" width={402} height={874}>
+                <Phone><ScreenCustomHours /></Phone>
+              </DCArtboard>
+              <DCArtboard id="sound"     key={'sound-'+waveKey} label="Sound picker" width={402} height={874}>
+                <Phone><ScreenSound /></Phone>
+              </DCArtboard>
+              <DCArtboard id="settings"  label="Settings"    width={402} height={874}>
+                <Phone><ScreenSettings /></Phone>
+              </DCArtboard>
+            </DCSection>
+
+            {/* ─── STORE ─── */}
+            <DCSection id="store" title="Sound pack store" subtitle="Future paid packs · everything else stays free">
+              <DCArtboard id="store"     key={'store-'+waveKey} label="Browse packs" width={402} height={874}>
+                <Phone><ScreenStore /></Phone>
+              </DCArtboard>
+            </DCSection>
+
+            {/* ─── WILD ─── */}
+            <DCSection id="wild" title="Signature moments" subtitle="The beep itself + a lock-screen widget">
+              <DCArtboard id="beep" key={'beep-'+waveKey} label="The beep, live" width={402} height={874}>
+                <Phone dark><ScreenBeeping /></Phone>
+              </DCArtboard>
+              <DCArtboard id="widget" label="Lock-screen widget" width={402} height={874}>
+                <Phone dark><ScreenLockWidget /></Phone>
+              </DCArtboard>
+            </DCSection>
+
+            {/* ─── ANDROID ─── */}
+            {t.showAndroid && (
+              <DCSection id="android" title="Android variants" subtitle="Same LCD, Material 3 nav chrome">
+                <DCArtboard id="and-home" key={'and-home-'+waveKey} label="Android · Home" width={412} height={892}>
+                  <AndroidDevice width={412} height={892}>
+                    <AndroidHomeContent />
+                  </AndroidDevice>
+                </DCArtboard>
+                <DCArtboard id="and-sound" key={'and-sound-'+waveKey} label="Android · Sound" width={412} height={892}>
+                  <AndroidDevice width={412} height={892}>
+                    <AndroidSoundContent />
+                  </AndroidDevice>
+                </DCArtboard>
+              </DCSection>
+            )}
+
+          </DesignCanvas>
+
+          {/* ─── TWEAKS ─── */}
+          <TweaksPanel title="Tweaks">
+            <TweakSection label="LCD theme" />
+            <TweakRadio
+              label="Palette"
+              value={t.lcdTheme}
+              options={['classic', 'dark', 'amber']}
+              onChange={(v) => setTweak('lcdTheme', v)}
+            />
+            <TweakSection label="Motion" />
+            <TweakToggle
+              label="Waveform preview"
+              value={t.wavePlaying}
+              onChange={(v) => setTweak('wavePlaying', v)}
+            />
+            <TweakSection label="Frames" />
+            <TweakToggle
+              label="Show Android variants"
+              value={t.showAndroid}
+              onChange={(v) => setTweak('showAndroid', v)}
+            />
+          </TweaksPanel>
+        </div>
+      );
+    }
+
+    ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+  </script>
+</body>
+</html>

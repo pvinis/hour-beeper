@@ -1,5 +1,6 @@
 import "@@/global.css"
 
+import { getDefaultAppOwnedChimePlayback } from "@/features/chime/chimePlaybackExpo"
 import {
 	configureNotificationRuntime,
 	createExpoNotificationClient,
@@ -20,7 +21,9 @@ export default function RootLayout() {
 		void (async () => {
 			try {
 				const notificationClient = await createExpoNotificationClient()
-				const runtimeCleanup = await configureNotificationRuntime(notificationClient)
+				const runtimeCleanup = await configureNotificationRuntime(notificationClient, {
+					chimePlayback: getDefaultAppOwnedChimePlayback(),
+				})
 
 				if (cancelled) {
 					runtimeCleanup()
