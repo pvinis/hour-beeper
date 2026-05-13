@@ -1,0 +1,268 @@
+/* ───────────────────────────────────────────────
+   PIP — design tokens
+   F-91W-era LCD watch vocabulary, original marks.
+   ─────────────────────────────────────────────── */
+
+:root {
+  /* LCD — light (classic) */
+  --lcd-bg:        #9ea98b;   /* on-pixel olive-khaki */
+  --lcd-bg-deep:   #94a081;   /* shaded edges */
+  --lcd-ghost:     rgba(31, 36, 18, 0.10);   /* unlit segments visible faintly */
+  --lcd-ink:       #14180a;
+  --lcd-ink-dim:   rgba(20, 24, 10, 0.45);
+  --lcd-bezel:     #2a2d2a;
+  --lcd-glass:     linear-gradient(160deg, rgba(255,255,255,.18), rgba(255,255,255,0) 32%, rgba(255,255,255,.06) 60%, rgba(0,0,0,.1));
+
+  /* Frame chrome */
+  --frame-1:       #1a1c20;
+  --frame-2:       #2c2e34;
+  --frame-3:       #44464d;
+  --chrome:        linear-gradient(180deg, #6a6d76 0%, #3a3c44 30%, #2c2e36 60%, #5b5e67 100%);
+  --chrome-edge:   #1a1c20;
+
+  /* Accents */
+  --amber:         #d4731a;
+  --amber-glow:    #f3a04b;
+  --red-led:       #c83737;
+  --green-led:     #6dbe2a;
+
+  /* Type */
+  --f-pixel:       'VT323', 'Courier New', monospace;
+  --f-dot:         'Doto', 'VT323', monospace;
+  --f-mono:        'Share Tech Mono', 'VT323', monospace;
+  --f-meta:        'Inter', -apple-system, system-ui, sans-serif;
+}
+
+/* dark LCD (backlit/negative) tweak */
+.lcd-dark {
+  --lcd-bg:        #0e1207;
+  --lcd-bg-deep:   #060802;
+  --lcd-ghost:     rgba(220, 250, 130, 0.06);
+  --lcd-ink:       #b4d05a;       /* phosphor-green ink */
+  --lcd-ink-dim:   rgba(180, 208, 90, 0.35);
+  --lcd-glass:     linear-gradient(160deg, rgba(255,255,255,.05), rgba(255,255,255,0) 40%, rgba(255,255,255,.02) 65%, rgba(0,0,0,.2));
+}
+
+/* amber tone tweak */
+.lcd-amber {
+  --lcd-bg:        #b8a47a;
+  --lcd-bg-deep:   #a8946a;
+  --lcd-ghost:     rgba(50, 30, 0, 0.10);
+  --lcd-ink:       #2a1a06;
+}
+
+/* ─── base ─── */
+.app-screen {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgba(255,255,255,.16), rgba(255,255,255,0) 55%),
+    var(--lcd-bg);
+  color: var(--lcd-ink);
+  font-family: var(--f-pixel);
+  height: 100%;
+  width: 100%;
+  position: relative;
+  overflow: hidden;
+  letter-spacing: 0.5px;
+}
+
+.app-screen::before {
+  /* subtle LCD scanline tex */
+  content: "";
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(180deg,
+    rgba(0,0,0,0.025) 0 1px,
+    transparent 1px 3px);
+  pointer-events: none; z-index: 1;
+}
+.app-screen::after {
+  /* vignette */
+  content: "";
+  position: absolute; inset: 0;
+  background: radial-gradient(ellipse at 50% 50%, transparent 55%, rgba(0,0,0,0.12) 100%);
+  pointer-events: none; z-index: 1;
+}
+
+.app-screen > * { position: relative; z-index: 2; }
+
+/* ─── type ─── */
+.t-pixel   { font-family: var(--f-pixel); }
+.t-dot     { font-family: var(--f-dot); font-variation-settings: "ROND" 100; }
+.t-mono    { font-family: var(--f-mono); }
+
+.title-lcd {
+  font-family: var(--f-pixel);
+  font-size: 16px; letter-spacing: 3px;
+  text-transform: uppercase;
+  color: var(--lcd-ink-dim);
+}
+
+.eyebrow {
+  font-family: var(--f-mono);
+  font-size: 11px; letter-spacing: 2px;
+  text-transform: uppercase;
+  color: var(--lcd-ink-dim);
+}
+
+/* ─── LCD ghost segments (the look of unlit digits behind lit ones) ─── */
+.seg-wrap { position: relative; display: inline-grid; line-height: 1; }
+.seg-wrap > .ghost,
+.seg-wrap > .ink { grid-area: 1 / 1; }
+.seg-wrap > .ghost { color: var(--lcd-ghost); }
+
+/* ─── icon helpers ─── */
+.dot { width: 6px; height: 6px; background: currentColor; border-radius: 1px; display: inline-block; }
+.tick {
+  display: inline-block; width: 14px; height: 14px;
+  background:
+    linear-gradient(45deg, transparent 36%, currentColor 36% 48%, transparent 48%) bottom left / 100% 100% no-repeat,
+    linear-gradient(-45deg, transparent 36%, currentColor 36% 48%, transparent 48%) top right / 100% 100% no-repeat;
+}
+
+/* ─── device-y bezel (used on home + onboarding) ─── */
+.bezel-outer {
+  position: absolute; inset: 0;
+  pointer-events: none;
+  box-shadow:
+    inset 0 0 0 6px var(--frame-1),
+    inset 0 0 0 7px rgba(255,255,255,.04),
+    inset 0 0 0 9px var(--frame-2),
+    inset 0 6px 14px rgba(0,0,0,.18);
+}
+
+/* ─── physical button ─── */
+.phys-btn {
+  font-family: var(--f-mono);
+  font-size: 12px; letter-spacing: 2px;
+  text-transform: uppercase;
+  background: var(--chrome);
+  color: #e8e8ec;
+  border: 1px solid var(--chrome-edge);
+  border-radius: 5px;
+  padding: 9px 14px 8px;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.32),
+    inset 0 -1px 0 rgba(0,0,0,.30),
+    0 1px 0 rgba(0,0,0,.30);
+  text-shadow: 0 1px 0 rgba(0,0,0,.6);
+}
+
+/* ─── chrome rail (around screens with a watch-like top frame) ─── */
+.chrome-rail {
+  background: var(--chrome);
+  height: 28px;
+  border-bottom: 2px solid var(--frame-1);
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px;
+  color: #e8e8ec;
+  font-family: var(--f-mono);
+  font-size: 10px; letter-spacing: 2px;
+  text-shadow: 0 1px 0 rgba(0,0,0,.6);
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.3), inset 0 -8px 18px rgba(0,0,0,.18);
+}
+
+/* ─── giant clock ─── */
+.giga-num {
+  font-family: var(--f-dot);
+  font-weight: 400;
+  font-size: 92px;
+  line-height: 1;
+  font-variation-settings: "ROND" 100;
+  letter-spacing: -2px;
+  color: var(--lcd-ink);
+}
+
+.colon-blink {
+  animation: blink 1.06s steps(2, jump-none) infinite;
+}
+@keyframes blink { 50% { opacity: 0.25; } }
+
+/* ─── waveform ─── */
+.wave-bar {
+  width: 5px;
+  background: var(--lcd-ink);
+  display: inline-block;
+}
+
+.wave-anim .wave-bar {
+  animation: wave 0.9s ease-in-out infinite;
+}
+@keyframes wave {
+  0%, 100% { height: 6px; }
+  50% { height: 100%; }
+}
+
+/* ─── battery ─── */
+.batt {
+  display: inline-flex; align-items: center; gap: 2px;
+}
+.batt-body {
+  width: 22px; height: 10px; border: 1.5px solid var(--lcd-ink);
+  position: relative; padding: 1px;
+  display: flex; gap: 1px;
+}
+.batt-tip {
+  width: 2px; height: 5px; background: var(--lcd-ink);
+}
+.batt-cell { flex: 1; background: var(--lcd-ink); }
+.batt-cell.empty { background: var(--lcd-ghost); }
+
+/* ─── divider with notches ─── */
+.div-dotted {
+  height: 1px;
+  background: repeating-linear-gradient(90deg, var(--lcd-ink) 0 3px, transparent 3px 7px);
+  opacity: 0.55;
+}
+
+/* ─── 24h grid for custom hours ─── */
+.hour-cell {
+  font-family: var(--f-pixel);
+  font-size: 22px;
+  width: 100%;
+  aspect-ratio: 1;
+  display: flex; align-items: center; justify-content: center;
+  position: relative;
+  border: 1px solid var(--lcd-ink-dim);
+}
+.hour-cell.on {
+  background: var(--lcd-ink);
+  color: var(--lcd-bg);
+}
+.hour-cell.off { color: var(--lcd-ink-dim); }
+
+/* ─── selectable list row ─── */
+.lcd-row {
+  display: flex; align-items: center; gap: 12px;
+  padding: 14px 18px;
+  border-bottom: 1px dashed var(--lcd-ink-dim);
+  position: relative;
+}
+.lcd-row.sel {
+  background: var(--lcd-ink);
+  color: var(--lcd-bg);
+}
+.lcd-row.sel .row-meta { color: var(--lcd-bg); opacity: .7; }
+
+/* ─── icon tile (app icon) ─── */
+.icon-tile {
+  border-radius: 22%;
+  position: relative;
+  overflow: hidden;
+  box-shadow:
+    0 1px 0 rgba(255,255,255,.4) inset,
+    0 -1px 0 rgba(0,0,0,.2) inset,
+    0 12px 28px rgba(0,0,0,.18),
+    0 2px 4px rgba(0,0,0,.12);
+}
+
+/* sparingly-used helpers */
+.flex { display: flex; }
+.col  { flex-direction: column; }
+.between { justify-content: space-between; }
+.center { align-items: center; justify-content: center; }
+.gap-2 { gap: 8px; }
+.gap-3 { gap: 12px; }
+.gap-4 { gap: 16px; }
+.gap-6 { gap: 24px; }
+.px-4 { padding-left: 16px; padding-right: 16px; }
+.py-3 { padding-top: 12px; padding-bottom: 12px; }
+.full { width: 100%; height: 100%; }
